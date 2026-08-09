@@ -29,6 +29,7 @@ jobs:
       - if: runner.os == 'Linux'
         name: Configure Electron SUID sandbox
         run: |
+          node node_modules/electron/install.js
           sudo chown root:root node_modules/electron/dist/chrome-sandbox
           sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
       - if: runner.os == 'Linux'
