@@ -1,0 +1,6 @@
+{"kind":"sdk","value":{"package":"@anthropic-ai/claude-agent-sdk","version":"0.3.226","query":"function"}}
+{"kind":"authentication-contract","value":{"distributedMode":"ANTHROPIC_API_KEY","apiKeyPresent":false,"localClaudeLoginAllowedForProbeOnly":true}}
+{"kind":"message","value":{"type":"system","subtype":"init","cwd":"<redacted>","session_id":"<sessionId>","tools":["AskUserQuestion","Bash"],"model":"<model>","permissionMode":"default","apiKeySource":"<redacted>","claude_code_version":"2.1.223"}}
+{"kind":"message","value":{"type":"assistant","session_id":"<sessionId>","error":"authentication_failed","is_api_error_message":true,"message":{"role":"assistant","content":[{"type":"text","text":"<redacted authentication failure>"}]}}}
+{"kind":"message","value":{"type":"result","subtype":"success","is_error":true,"session_id":"<sessionId>","terminal_reason":"api_error","result":"<redacted authentication failure>"}}
+{"kind":"lifecycle","value":{"state":"closed"}}

@@ -1,0 +1,20 @@
+{"direction":"client","message":{"id":1,"method":"initialize","params":{"clientInfo":{"name":"harness-sdk-probe","version":"0.0.0"},"capabilities":{"experimentalApi":true}}}}
+{"direction":"server","message":{"id":1,"result":{"userAgent":"Codex Desktop/0.147.0","platformFamily":"unix","platformOs":"macos"}}}
+{"direction":"client","message":{"method":"initialized"}}
+{"direction":"client","message":{"id":2,"method":"account/read","params":{"refreshToken":false}}}
+{"direction":"server","message":{"id":2,"result":{"account":{"type":"chatgpt","email":"<redacted>","planType":"<redacted>"},"requiresOpenaiAuth":true}}}
+{"direction":"client","message":{"id":3,"method":"thread/start","params":{"cwd":"<redacted>","approvalPolicy":"on-request","sandbox":"workspace-write","ephemeral":false,"historyMode":"paginated"}}}
+{"direction":"server","message":{"id":3,"result":{"thread":{"id":"<threadId>","status":{"type":"idle"},"ephemeral":false,"turns":[]}}}}
+{"direction":"client","message":{"id":4,"method":"turn/start","params":{"threadId":"<threadId>","collaborationMode":{"mode":"plan","settings":{"model":"<model>","reasoning_effort":"low","developer_instructions":null}},"input":[{"type":"text","text":"<probe prompt>","text_elements":[]}]}}}
+{"direction":"server","message":{"id":4,"result":{"turn":{"id":"<turnId>","status":"inProgress"}}}}
+{"direction":"server","message":{"method":"turn/started","params":{"threadId":"<threadId>","turn":{"id":"<turnId>","status":"inProgress"}}}}
+{"direction":"client","message":{"id":5,"method":"turn/steer","params":{"threadId":"<threadId>","expectedTurnId":"<turnId>","input":[{"type":"text","text":"<steering text>","text_elements":[]}]}}}
+{"direction":"server","message":{"method":"item/tool/requestUserInput","id":0,"params":{"threadId":"<threadId>","turnId":"<turnId>","itemId":"<itemId>","questions":[{"id":"fixture_label","header":"Fixture","question":"Which fixture label should I use?","isOther":true,"isSecret":false,"options":[{"label":"primary","description":"Use the primary fixture."}]}],"isBlocking":true,"autoResolutionMs":null}}}
+{"direction":"client","message":{"id":0,"result":{"answers":{"fixture_label":{"answers":["primary"]}}}}}
+{"direction":"server","message":{"method":"item/commandExecution/requestApproval","id":1,"params":{"threadId":"<threadId>","turnId":"<turnId>","itemId":"<itemId>","reason":"<redacted>","command":"<redacted>","cwd":"<redacted>","availableDecisions":["accept","cancel"]}}}
+{"direction":"client","message":{"id":1,"result":{"decision":"accept"}}}
+{"direction":"client","message":{"id":8,"method":"turn/interrupt","params":{"threadId":"<threadId>","turnId":"<turnId>"}}}
+{"direction":"server","message":{"method":"turn/completed","params":{"threadId":"<threadId>","turn":{"id":"<turnId>","status":"interrupted"}}}}
+{"direction":"client","message":{"id":9,"method":"thread/resume","params":{"threadId":"<threadId>","cwd":"<redacted>"}}}
+{"direction":"server","message":{"id":9,"result":{"thread":{"id":"<threadId>","status":{"type":"idle"}}}}}
+{"direction":"lifecycle","message":{"state":"closed","graceful":true}}

@@ -1,0 +1,16 @@
+{
+  "name": "@harness-sdk/example-tui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -b",
+    "smoke": "node dist/index.js --smoke"
+  },
+  "dependencies": {
+    "@harness-sdk/claude": "0.1.0",
+    "@harness-sdk/codex": "0.1.0",
+    "@harness-sdk/core": "0.1.0"
+  }
+}

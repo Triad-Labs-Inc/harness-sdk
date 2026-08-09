@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Harness SDK Electron Example</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font:
+          14px system-ui,
+          sans-serif;
+      }
+      body {
+        margin: 0;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        height: 100vh;
+      }
+      header,
+      footer {
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+        border-color: #8885;
+      }
+      header {
+        border-bottom: 1px solid #8885;
+      }
+      footer {
+        border-top: 1px solid #8885;
+      }
+      select,
+      input,
+      button {
+        font: inherit;
+        padding: 7px 9px;
+      }
+      #sessions,
+      #prompt {
+        flex: 1;
+      }
+      #transcript {
+        margin: 0;
+        padding: 16px;
+        overflow: auto;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <select id="providers" aria-label="Provider"></select>
+      <button id="create">New session</button>
+      <select id="sessions" aria-label="Session"></select>
+    </header>
+    <pre id="transcript"></pre>
+    <footer>
+      <input id="prompt" aria-label="Prompt" placeholder="Send a message" />
+      <button id="send">Send</button>
+      <button id="interrupt">Interrupt</button>
+    </footer>
+    <script type="module" src="./renderer.js"></script>
+  </body>
+</html>

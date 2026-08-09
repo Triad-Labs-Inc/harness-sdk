@@ -1,0 +1,229 @@
+# Implementation status
+
+Last updated: 2026-08-09
+
+This is the running acceptance log for the implementation plan. A milestone is marked complete only when its documented completion check passes.
+
+## Milestone 0 — provider boundary validation
+
+Status: complete
+
+Observed environment:
+
+- Node.js 25.2.1 and npm 11.6.2 on macOS.
+- Codex CLI 0.147.0 with app-server stdio transport and experimental generated TypeScript/JSON schemas.
+- Claude Code 2.1.223 was observed initially; the successful local-login probe used 2.1.226 after Claude Code updated.
+- `@anthropic-ai/claude-agent-sdk` 0.3.226 inspected from its published npm tarball.
+
+Commands run:
+
+```text
+node --version
+npm --version
+codex --version
+codex app-server --help
+codex app-server generate-ts --experimental --out <temporary-directory>
+codex app-server generate-json-schema --experimental --out <temporary-directory>
+npm pack @anthropic-ai/claude-agent-sdk@0.3.226
+HARNESS_RUN_LIVE_PROBES=1 node experiments/codex-app-server-probe.ts
+CLAUDE_AGENT_SDK_ENTRY=<unpacked-sdk> CLAUDE_EXECUTABLE=<installed-claude> HARNESS_RUN_LIVE_PROBES=1 HARNESS_PROBE_ALLOW_LOCAL_CLAUDE_LOGIN=1 node experiments/claude-agent-sdk-probe.ts
+claude auth status
+HARNESS_RUN_LIVE_PROBES=1 HARNESS_PROBE_ALLOW_LOCAL_CLAUDE_LOGIN=1 CLAUDE_EXECUTABLE=<installed-claude> node experiments/claude-agent-sdk-probe.ts
+```
+
+Results so far:
+
+- Codex generated schemas confirm `initialize`/`initialized`, `account/read`, `thread/start`, `thread/resume`, `turn/start`, `turn/steer`, `turn/interrupt`, approval callbacks, and `item/tool/requestUserInput` over newline-delimited stdio JSON.
+- `turn/steer` requires the active native turn ID as `expectedTurnId`; this remains adapter-internal and does not change the public contract.
+- Observed `thread/resume` requests immediately after `thread/start` failed with JSON-RPC error `-32600` and `no rollout found for thread id`, for both ephemeral and persistent empty threads. A native thread becomes resumable only after a turn materializes its rollout; resumable Harness sessions must use persistent Codex threads and must not assume an empty native thread can be resumed.
+- An observed `turn/steer` sent after the successful `turn/start` response but before the `turn/started` notification failed with JSON-RPC error `-32600` and `no active turn to steer`. The adapter must use the notification, not the request response, as its native steering-readiness boundary.
+- Codex 0.147.0 rejected a model attempt to use `request_user_input` in Default collaboration mode. The probe uses Plan mode for the required question round trip; the adapter normalizes the callback when emitted and does not claim the tool is available in every native collaboration mode.
+- A sandboxed command that encountered denied network access failed inside the sandbox without automatically requesting approval. Approval fixtures must ask Codex to request escalated execution explicitly; applications must not assume every sandbox denial becomes an interaction request.
+- Claude types and current official documentation confirm `query()` async streaming, session IDs and `resume`, `AbortController`/`Query.interrupt()` cancellation, `canUseTool`, and `AskUserQuestion` through `canUseTool`.
+- Claude 0.3.226 defaults to loading all settings sources when `settingSources` is omitted. The adapter will choose configuration sources explicitly and test this behavior.
+- The unpacked Claude SDK tarball did not include its optional platform CLI binary and failed before startup until `pathToClaudeCodeExecutable` was set to the installed executable. The adapter supports an exact executable path and reports missing binaries as provider status rather than treating this as a turn failure.
+- Anthropic currently says third-party products may not offer Claude.ai login or subscription rate limits without prior approval. The initial adapter therefore required `ANTHROPIC_API_KEY`. The product contract was subsequently changed to support a bring-your-own local Claude Code login while making required upstream approval the embedding application's and distributor's responsibility.
+- Sanitized, selected observations are checked in under `experiments/fixtures/`. The complete local traces were intentionally not checked in because they contain unrelated plugin diagnostics and machine-specific data.
+- The initial local OAuth probe reached `system/init` but failed authentication because the installed login had expired. After `claude auth login`, the same sanitized probe completed through the user's Claude Max subscription: it streamed partial messages, handled `AskUserQuestion`, approved and ran the fixture Bash command, completed a turn, resumed the same native session ID, cancelled a running turn, and closed every query.
+- The production status path now uses the same no-prompt SDK initialization mechanism with persistence and MCP servers disabled. It reads only account metadata, makes no model request, and accepts local subscription, API-key, or supported external-provider authentication reported by Claude Code.
+
+Upstream differences from the original product contract:
+
+- The Agent SDK and installed Claude Code can technically reuse a local Claude.ai subscription login without credential extraction. Harness now exposes that capability by explicit product decision; the distribution approval caveat remains documented.
+
+Unresolved upstream risks:
+
+- The live Claude integration currently validates the local subscription path. A separately supplied API key is still needed to repeat the live test specifically against API-key authentication; deterministic coverage verifies its status metadata path.
+- Provider protocols are additive and versioned independently. Production parsing must remain tolerant of unknown messages and fields.
+
+Intentional deviations:
+
+- Claude local-subscription authentication is enabled even though Anthropic's public Agent SDK documentation says third-party products require prior approval to offer Claude.ai login or subscription rate limits. Harness delegates credentials to the user-installed runtime and assigns approval/compliance responsibility to the embedding application and distributor.
+
+## Milestone 1 — fake vertical slice
+
+Status: complete
+
+Commands run:
+
+```text
+npm install
+npm run build
+npx vitest run packages/testkit/src
+```
+
+Results:
+
+- The TypeScript workspace builds core, testkit, both provider package shells, and both example shells.
+- The deterministic fake proves send, ordered streaming, persistence before delivery, subscription, history replay, `turn.done()`, queueing, permission and question responses, steering, interruption, provider failure, graceful idempotent close, and independent session concurrency.
+- Core and testkit prove this behavior without an installed provider, network, credentials, or paid usage. The final default suite count is recorded under the release gate.
+
+## Milestone 2 — SQLite and recovery
+
+Status: complete
+
+Commands run:
+
+```text
+npx vitest run packages/testkit/src
+npm test
+```
+
+Results:
+
+- The shared storage contract passes against memory and SQLite.
+- SQLite uses schema migrations, foreign keys, WAL, full synchronous commits, transactional event/projection writes, paginated history, store-wide auto-increment sequences, and opaque provider metadata.
+- A public-API close/reopen test preserves sessions, history, projections, and sequence boundaries.
+- Simulated restart tests fail active work with `HOST_RESTARTED`, expire callbacks, pause accepted queued work, and require explicit `resumeQueue()` before provider execution.
+- A duplicate projection fault rolls back the event and its sequence assignment atomically.
+
+## Milestone 3 — Codex provider
+
+Status: complete
+
+Commands run:
+
+```text
+npx vitest run packages/provider-codex/src
+npm run test:integration:codex
+```
+
+Results:
+
+- The adapter supervises newline-delimited `codex app-server` stdio, performs the handshake, correlates JSON-RPC requests with timeouts, starts/resumes persistent threads, waits for `turn/started` before steering, translates interactions, and shuts down the owned process tree.
+- Deterministic tests use a real child-process protocol fixture and the same provider contract suite as the fake and Claude adapters.
+- `cross-spawn` resolves native binaries and npm `.cmd` shims without shell interpolation on Windows. Forced Windows shutdown awaits `taskkill /T` and escalates with `/F`; a stubborn parent-plus-grandchild fixture proves forced process-tree shutdown on the executable host and will exercise the Windows branch in CI.
+- The installed Codex 0.147.0 integration passed status, real streamed turn completion, and graceful shutdown in 7.3 seconds.
+- The TUI registers the adapter only through its public package export and supports history, permission/input handling, steering-independent commands, interruption, and native session resume.
+
+## Milestone 4 — Claude provider
+
+Status: complete
+
+Commands run:
+
+```text
+npx vitest run packages/provider-claude/src
+npm run test:integration
+npm run test:integration:claude
+```
+
+Results:
+
+- The adapter uses `@anthropic-ai/claude-agent-sdk` 0.3.226 directly, maps partial and complete messages and tools, captures/resumes the SDK session ID, translates `canUseTool` permissions and `AskUserQuestion`, cancels through `Query.interrupt()`, and closes queries idempotently.
+- Existing settings are respected through an explicit `["user", "project", "local"]` default; applications can pass `[]` for isolation. A deterministic test verifies both the selected sources and resume option.
+- The Claude adapter passes the same status, streaming, tools, failure, crash, interaction, interruption, resume, unknown-message, and lifecycle contracts as Codex. It explicitly reports steering as unsupported.
+- The TUI and Electron main process switch providers without changing normalized session, event, history, interaction, or turn-result handling.
+- The opt-in installed-provider test remains skipped by default and now accepts either local Claude Code authentication or API credentials. With the user's Claude Max login, provider status returned `ready` and a real streamed turn completed without `ANTHROPIC_API_KEY` through both an explicitly selected installed Claude Code executable (13.21 seconds) and the SDK-managed default executable (14.48 seconds).
+- Deterministic status tests cover local subscription metadata, API-key metadata, unauthenticated first-party state, missing executables, no-prompt/non-persistent probe options, timeout cleanup, and query closure.
+
+## Milestone 5 — lifecycle hardening
+
+Status: complete
+
+Results:
+
+- Configurable ten-minute idle suspension, 25-millisecond delta coalescing, bounded subscribers with replay, rotating redacted logs, async environment/executable resolution, and event/database schema versions are implemented.
+- Fault tests cover provider-reported failure, subprocess/SDK crashes, forced parent/grandchild shutdown, crash with an unresolved callback, storage write failure, SQLite projection rollback, malformed/unknown additive messages, host restart, slow consumers, graceful close during active/queued work, and queued work paused after provider failure.
+- A 20-session stress test verifies concurrent runtimes, per-session ordering, durable global sequence uniqueness, and exactly one completion per turn.
+- Raw persistence remains `none` by default, while `errors` retains only documented failure and diagnostic raw payloads. SQLite byte scans and all rotated log segments are checked for registered environment secrets, including an inherited value emitted by the Codex child process.
+- Public-API tests cover pre-acceptance availability/capability errors, adapter contract version rejection, archive/list/delete semantics, and subscription failure after transactional deletion.
+
+## Milestone 6 — reference integrations and packaging
+
+Status: complete on the local macOS and Linux release hosts
+
+Commands run:
+
+```text
+npm run smoke -w @harness-sdk/example-tui
+npm run smoke -w @harness-sdk/example-electron
+npm run pack:check
+```
+
+Results:
+
+- The TUI exposes provider status, session selection/resume, streaming, permissions, questions, interruption, concurrent command input, and history using public exports only.
+- Electron keeps Harness in the main process, stores data below `app.getPath("userData")`, validates a narrow typed IPC surface, and gives the sandboxed renderer no process, environment, or database access.
+- Both example smoke tests pass. Electron 43.3.0 was selected from the current stable release line and its main-process smoke test passes locally.
+- The Electron smoke uses an isolated profile and exits through Electron's application lifecycle. A real Linux/Xvfb run caught and verified the fix for an initially lingering main process.
+- All four package tarballs contain built ESM, declarations/maps, README, and license files. A clean fixture installs them together, runs a fake turn, imports both adapters, and type-checks only the shipped declarations.
+- API, migration, adapter-authoring, third-party license/authentication, and package documentation are included.
+
+## Release gate
+
+Status: blocked only on external Windows CI execution
+
+Passed locally on macOS arm64 with Node.js 22.23.2 and 24.14.1:
+
+```text
+npm ci
+npm run build
+npm run typecheck
+npm run lint
+npm run format:check
+npm test                         # 79 tests passed
+npm run test:integration         # 2 opt-in tests skipped without flags/credentials
+npm run pack:check
+npm run smoke -w @harness-sdk/example-tui
+npm run smoke -w @harness-sdk/example-electron
+```
+
+The opt-in integration suite also passed both installed-provider tests while leaving them skipped by default on macOS with Node.js 25.2.1:
+
+```text
+npm run test:integration         # 2 opt-in tests skipped without flags/credentials
+npm run test:integration:codex   # 1 installed-provider test passed in 11.68 seconds
+npm run test:integration:claude  # passed via Claude Max login: 13.21s explicit executable, 14.48s SDK default
+```
+
+Passed in clean Debian 12 amd64 containers with Node.js 22.23.2 and 24.18.0:
+
+```text
+npm ci
+npm run build
+npm run typecheck
+npm run lint
+npm run format:check
+npm test                         # 78 tests passed
+npm run test:integration         # 2 opt-in tests skipped without flags/credentials
+npm run pack:check
+npm run smoke -w @harness-sdk/example-tui
+xvfb-run -a npm run smoke -w @harness-sdk/example-electron
+```
+
+The Linux runs used the locally cached `registry.fly.io/triad-labs-sandboxes:latest` image because the earlier Docker Hub pull stalled. They covered clean dependency installs, the full deterministic suite, tarball installation/runtime/declaration checks, and both packaged example smokes. Electron ran as an unprivileged user under Xvfb with its Chromium sandbox enabled; the disposable container required namespace privileges because ordinary Docker namespace creation was denied.
+
+Gate audit:
+
+- Memory and SQLite storage contracts: passed.
+- Fake, Codex, and Claude shared provider contracts: passed deterministically.
+- Crash/restart determinism and absence of secret fixtures: passed.
+- Public declarations, package contents, clean installation, and example public-import boundaries: passed.
+- Upstream license and Claude distribution/authentication constraints, including the embedding application's approval responsibility for subscription access: documented.
+- Windows preflight: package smoke invokes npm through `npm_execpath`; opt-in integration scripts use a platform-neutral Node launcher; tests use OS temporary paths; Codex launches `.cmd` shims through `cross-spawn`; Electron smoke uses an isolated profile and explicit exit; forced tree shutdown has a Windows-aware deterministic test. These changes pass all available macOS and Linux gates.
+- Supported-OS CI: macOS arm64 and Linux amd64 pass the complete release command set and packaged smokes on Node.js 22 and 24. The workflow is configured for Ubuntu, macOS, and Windows on both Node lines, but the hosted matrix cannot execute because this directory is not connected to a Git repository or CI runner. No Windows VM, emulator, or Windows disk image is available locally. Windows on Node.js 22 and 24 remains unproven and is the sole external release blocker.
+
+Intentional deviations:
+
+- The official Claude adapter accepts bring-your-own local subscription authentication instead of enforcing API-key-only distribution. This is an explicit product decision recorded in `docs/design-decisions.md` and `docs/third-party-notices.md`.

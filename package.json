@@ -1,0 +1,38 @@
+{
+  "name": "harness-sdk-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build": "tsc -b && node examples/electron/scripts/copy-assets.mjs",
+    "clean": "tsc -b --clean",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration:codex": "node scripts/run-live-integration.mjs codex",
+    "test:integration:claude": "node scripts/run-live-integration.mjs claude",
+    "typecheck": "tsc -b --pretty false",
+    "pack:check": "node scripts/pack-smoke.mjs"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.1",
+    "@types/cross-spawn": "6.0.6",
+    "@types/node": "22.19.3",
+    "@typescript-eslint/eslint-plugin": "8.66.0",
+    "@typescript-eslint/parser": "8.66.0",
+    "eslint": "9.39.1",
+    "prettier": "3.9.6",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}
