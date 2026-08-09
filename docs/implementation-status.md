@@ -151,7 +151,7 @@ Results:
 
 ## Milestone 6 — reference integrations and packaging
 
-Status: complete on the local macOS and Linux release hosts
+Status: complete on macOS, Linux, and Windows release hosts
 
 Commands run:
 
@@ -172,7 +172,7 @@ Results:
 
 ## Release gate
 
-Status: blocked only on external Windows CI execution
+Status: complete
 
 Passed locally on macOS arm64 with Node.js 22.23.2 and 24.14.1:
 
@@ -196,6 +196,26 @@ npm run test:integration         # 2 opt-in tests skipped without flags/credenti
 npm run test:integration:codex   # 1 installed-provider test passed in 11.68 seconds
 npm run test:integration:claude  # passed via Claude Max login: 13.21s explicit executable, 14.48s SDK default
 ```
+
+Passed in GitHub Actions on `ubuntu-latest`, `macos-latest`, and `windows-latest`, each with Node.js 22 and 24:
+
+```text
+gh run watch 31313394419 --repo ferran9908/harness-sdk --exit-status
+
+npm ci
+npm run build
+npm run typecheck
+npm run lint
+npm run format:check
+npm test                         # 79 tests passed per matrix job
+npm run pack:check
+npm run smoke -w @harness-sdk/example-tui
+npm run smoke -w @harness-sdk/example-electron
+```
+
+All six jobs passed. The hosted run proved the Windows `.cmd` launch and process-tree paths, clean package installation, shipped declaration checks, and both reference-application smokes on both supported Node lines. Linux downloaded Electron before configuring its SUID sandbox and ran the Electron smoke under Xvfb with the Chromium sandbox enabled.
+
+The first hosted runs exposed two release-environment issues without changing public SDK behavior: Windows checkout converted text files to CRLF before the formatting check, and Linux's lazily downloaded Electron binary did not yet exist when its sandbox permissions were configured. `.gitattributes` now enforces LF for repository text (while retaining CRLF for Windows command files), and CI installs Electron before applying the Linux sandbox ownership and mode. The corrected matrix passed in full.
 
 Passed in clean Debian 12 amd64 containers with Node.js 22.23.2 and 24.18.0:
 
@@ -221,8 +241,8 @@ Gate audit:
 - Crash/restart determinism and absence of secret fixtures: passed.
 - Public declarations, package contents, clean installation, and example public-import boundaries: passed.
 - Upstream license and Claude distribution/authentication constraints, including the embedding application's approval responsibility for subscription access: documented.
-- Windows preflight: package smoke invokes npm through `npm_execpath`; opt-in integration scripts use a platform-neutral Node launcher; tests use OS temporary paths; Codex launches `.cmd` shims through `cross-spawn`; Electron smoke uses an isolated profile and explicit exit; forced tree shutdown has a Windows-aware deterministic test. These changes pass all available macOS and Linux gates.
-- Supported-OS CI: macOS arm64 and Linux amd64 pass the complete release command set and packaged smokes on Node.js 22 and 24. The workflow is configured for Ubuntu, macOS, and Windows on both Node lines, but the hosted matrix cannot execute because this directory is not connected to a Git repository or CI runner. No Windows VM, emulator, or Windows disk image is available locally. Windows on Node.js 22 and 24 remains unproven and is the sole external release blocker.
+- Windows execution: package smoke invokes npm through `npm_execpath`; opt-in integration scripts use a platform-neutral Node launcher; tests use OS temporary paths; Codex launches `.cmd` shims through `cross-spawn`; Electron smoke uses an isolated profile and explicit exit; forced tree shutdown has a Windows-aware deterministic test. The complete hosted release command set passed on Windows with Node.js 22 and 24.
+- Supported-OS CI: Ubuntu, macOS, and Windows pass the complete release command set and packaged smokes on Node.js 22 and 24. GitHub Actions run `31313394419` is the release-gate evidence.
 
 Intentional deviations:
 
