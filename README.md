@@ -14,6 +14,8 @@ The first implementation includes the core runtime, memory and SQLite stores, Co
 
 The SDK is a local developer tool. It does not provide a hosted service, user accounts, billing, or a user interface.
 
+For a working desktop starting point, clone the public [Harness Electron Starter](https://github.com/Triad-Labs-Inc/harness-electron-starter) or create a new repository from its GitHub template.
+
 Harness SDK is published as one package with explicit provider and testing subpath exports:
 
 - `@triadlabs/harness-sdk` — provider-independent orchestration, storage, events, and lifecycle

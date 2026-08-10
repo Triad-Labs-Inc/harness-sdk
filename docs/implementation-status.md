@@ -475,7 +475,7 @@ Results: formatting and linting passed. The package tarball, dependency-light in
 
 ## Coding-agent Electron starter prompt — 2026-08-11
 
-Added a copy-ready, coding-agent-agnostic prompt at `getting-started/electron-starter-prompt.mdx` and linked it from the Mintlify Start here navigation and repository README. The prompt safely builds in an empty current directory or creates an isolated `harness-electron-app` child directory when unrelated files are present.
+Added a copy-ready, coding-agent-agnostic prompt at `getting-started/electron-starter-prompt.mdx` and linked it from the Mintlify Start here navigation and repository README. The prompt now clones the public `Triad-Labs-Inc/harness-electron-starter` template into an empty current directory or an isolated `harness-electron-app` child directory when other files are present.
 
 The generated-app contract requires the published `@triadlabs/harness-sdk` package, Harness ownership in Electron's main process, typed and validated IPC, multiple navigable Codex and Claude sessions, explicit queue/steer/interrupt behavior, durable snapshot-plus-subscribe projection, supervised permissions, separate questions, recovery controls, and an offline deterministic acceptance suite. Provider login and live-provider checks remain explicit manual steps.
 
@@ -491,4 +491,25 @@ npm run docs:dev -- --no-open --port 3333
 curl --location http://localhost:3333/getting-started/electron-starter-prompt
 ```
 
-Results: formatting passed, Mintlify strict build validation passed, and the accessibility audit found no issues across all 35 checked MDX files. The local preview returned HTTP 200 for the new route and rendered the prompt title, app instruction, and safe fallback directory name.
+Results: formatting passed, Mintlify strict build validation passed, and the accessibility audit found no issues across all 35 checked MDX files. The local preview returned HTTP 200 for the new route and rendered the clone URL, the instruction not to rebuild from scratch, the safe fallback directory name, and the GitHub template option.
+
+## Public Electron starter — 2026-08-11
+
+Converted the standalone proof of concept into the public `Triad-Labs-Inc/harness-electron-starter` repository and enabled GitHub's template-repository mode. The starter consumes `@triadlabs/harness-sdk@0.1.0` from npm and contains no local SDK dependency or machine-specific path.
+
+The application now uses a simplified two-pane workbench with navigable sessions and a focused conversation surface. Provider readiness appears in first-run and session-creation contexts instead of a permanent diagnostics sidebar. The new-session dialog is keyboard-dismissible, provider selection avoids unavailable defaults, and durable activity appears only as contextual session or header state.
+
+The repository includes an MIT license, portable clone instructions, customization guidance, a Node 22 pin, public-repository metadata, GitHub Actions CI, event-projection tests, a deterministic fake-provider vertical-slice test, and an isolated Electron smoke test.
+
+Commands run in the source directory and a clean clone from GitHub:
+
+```text
+npm ci
+npm run check
+npm run build
+npm run smoke
+npm audit --audit-level=high
+npm start
+```
+
+Results: 3 tests passed across 2 files. Type checking, formatting, the production renderer and main/preload builds, the isolated Electron smoke test, and the high-severity audit passed with 0 vulnerabilities. The production `file://` build was inspected in the real Electron window; both providers reported ready, the first-run screen and new-session dialog rendered correctly, the dialog closed with Escape, and the simplified layout contained no right diagnostics sidebar. A clean clone from `https://github.com/Triad-Labs-Inc/harness-electron-starter.git` repeated installation, checks, build, and smoke successfully.
