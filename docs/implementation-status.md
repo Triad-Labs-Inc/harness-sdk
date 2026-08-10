@@ -513,3 +513,5 @@ npm start
 ```
 
 Results: 3 tests passed across 2 files. Type checking, formatting, the production renderer and main/preload builds, the isolated Electron smoke test, and the high-severity audit passed with 0 vulnerabilities. The production `file://` build was inspected in the real Electron window; both providers reported ready, the first-run screen and new-session dialog rendered correctly, the dialog closed with Escape, and the simplified layout contained no right diagnostics sidebar. A clean clone from `https://github.com/Triad-Labs-Inc/harness-electron-starter.git` repeated installation, checks, build, and smoke successfully.
+
+The first GitHub Actions smoke attempt exposed the hosted Linux runner's unconfigured Electron SUID sandbox helper. The workflow now passes `--no-sandbox` only to the disposable CI smoke process; the application's production `BrowserWindow` remains sandboxed. Replacement run `31418330907` passed clean installation, checks, production build, headless Electron smoke, and audit.
