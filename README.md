@@ -123,3 +123,7 @@ T3 Code and Buzz are architectural references, not runtime dependencies.
 - [Buzz](https://github.com/block/buzz) demonstrates local agent lifecycle management in a desktop application.
 - [Codex app-server](https://github.com/openai/codex/tree/main/codex-rs/app-server) provides the Codex integration protocol.
 - [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk-typescript) provides the Claude integration API.
+
+## License
+
+Harness SDK is available under the [MIT License](./LICENSE). Third-party dependencies and provider runtimes retain their own licenses and terms.

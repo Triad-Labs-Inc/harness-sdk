@@ -457,3 +457,18 @@ npm run docs:validate
 ```
 
 Results: 79 tests passed. Type checks, package assembly and clean-install smoke tests, TUI and Electron builds, formatting, linting, and Mintlify validation passed.
+
+## MIT license metadata — 2026-08-10
+
+The repository and every workspace now declare the SPDX license identifier `MIT`. The root and both private examples were the missing entries; the public SDK and internal package workspaces already declared it. The README links to the canonical root `LICENSE`, while the publishable package retains its identical `packages/core/LICENSE` copy for the npm tarball. Third-party dependencies and provider runtimes retain their own licenses and terms.
+
+Commands run:
+
+```text
+npm install --package-lock-only --ignore-scripts
+npm run format:check
+npm run lint
+npm run pack:check
+```
+
+Results: formatting and linting passed. The package tarball, dependency-light installation, runtime imports, optional Vitest entrypoint, and declaration smoke tests passed.
