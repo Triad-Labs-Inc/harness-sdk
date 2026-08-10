@@ -5,15 +5,15 @@ import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
 
-import { createClaudeProvider } from "@triadlabs/harness-claude";
-import { createCodexProvider } from "@triadlabs/harness-codex";
+import { createClaudeProvider } from "@triadlabs/harness-sdk/claude";
+import { createCodexProvider } from "@triadlabs/harness-sdk/codex";
 import {
   createHarness,
   type HarnessEvent,
   type PermissionDecision,
   type Session,
   type SessionId,
-} from "@triadlabs/harness";
+} from "@triadlabs/harness-sdk";
 
 function argument(name: string): string | undefined {
   const index = process.argv.indexOf(name);

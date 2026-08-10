@@ -5,3 +5,4 @@ dist/
 .harness/
 coverage/
 examples/electron/out/
+docs/.mintlify/

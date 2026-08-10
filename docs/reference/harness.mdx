@@ -1,0 +1,112 @@
+---
+title: "Harness API"
+description: "Reference for createHarness, provider registrations, sessions, turns, and lifecycle methods."
+icon: "braces"
+---
+
+Import core APIs from `@triadlabs/harness-sdk`.
+
+## `createHarness(options)`
+
+Creates the data directories, opens and recovers storage, validates adapter registrations, and returns a `Harness`.
+
+```ts
+interface CreateHarnessOptions {
+  homeDir: string;
+  providers: Readonly<Record<string, ProviderAdapterV1>>;
+  store?: HarnessStore;
+  rawEvents?: "none" | "errors" | "all";
+  logger?: HarnessLogger;
+  idleTimeoutMs?: number;
+  textDeltaCoalesceMs?: number;
+  subscriberBufferSize?: number;
+  resumeQueuesOnStartup?: boolean;
+}
+```
+
+| Option                  | Default                                    |
+| ----------------------- | ------------------------------------------ |
+| `store`                 | `SQLiteStore` at `homeDir/harness.sqlite3` |
+| `rawEvents`             | `none`                                     |
+| `idleTimeoutMs`         | 10 minutes                                 |
+| `textDeltaCoalesceMs`   | 25 milliseconds                            |
+| `subscriberBufferSize`  | 1,000 events plus a byte bound             |
+| `resumeQueuesOnStartup` | `false`                                    |
+
+## `Harness`
+
+```ts
+interface Harness {
+  readonly sessions: SessionManager;
+  readonly providers: Readonly<Record<string, ProviderRegistration>>;
+  close(): Promise<void>;
+}
+```
+
+`close()` is graceful and idempotent.
+
+## `SessionManager`
+
+```ts
+interface SessionManager {
+  create(options: { provider: string; cwd?: string }): Promise<Session>;
+  load(id: SessionId): Promise<Session>;
+  list(options?: { includeArchived?: boolean }): Promise<readonly SessionSummary[]>;
+}
+```
+
+When `cwd` is omitted, the session uses `homeDir/workspace`.
+
+## `Session`
+
+```ts
+interface Session {
+  readonly id: SessionId;
+  readonly provider: string;
+  readonly cwd: string;
+
+  send(request: SendRequest): Promise<Turn>;
+  steer(request: { text: string }): Promise<void>;
+  interrupt(): Promise<void>;
+  respondToPermission(requestId: InteractionRequestId, decision: PermissionDecision): Promise<void>;
+  respondToInput(requestId: InteractionRequestId, response: InputResponse): Promise<void>;
+  snapshot(): Promise<SessionSnapshot>;
+  history(options?: HistoryOptions): Promise<HistoryPage>;
+  subscribe(
+    options: { afterSequence?: number },
+    observer: SubscriptionObserver,
+  ): Promise<Subscription>;
+  resumeQueue(): Promise<void>;
+  archive(): Promise<void>;
+  delete(): Promise<void>;
+}
+```
+
+## `SendRequest` and `Turn`
+
+```ts
+interface SendRequest {
+  text: string;
+  model?: string;
+  reasoning?: string;
+  permissionMode?: "supervised" | "full_access";
+}
+
+interface Turn {
+  readonly id: TurnId;
+  done(): Promise<TurnResult>;
+}
+```
+
+## `TurnResult`
+
+```ts
+type TurnResult =
+  | { status: "completed" }
+  | { status: "interrupted"; reason?: string }
+  | {
+      status: "failed";
+      error: HarnessErrorData;
+      mayHaveSideEffects: boolean;
+    };
+```

@@ -1,0 +1,91 @@
+---
+title: "Harness SDK"
+description: "A durable TypeScript runtime for local Codex and Claude agent applications."
+mode: "wide"
+---
+
+# Build the agent application. Keep the provider replaceable.
+
+Harness SDK gives Node.js and Electron applications one durable API for local coding agents. Your application owns the interface. Harness owns sessions, queued turns, normalized events, SQLite persistence, permissions, recovery, and provider lifecycle.
+
+```bash
+npm install @triadlabs/harness-sdk
+```
+
+<Columns cols={3}>
+  <Card title="Durable by default" icon="database" href="/guides/streaming-and-history">
+    Events commit to SQLite before delivery. Snapshots and sequence replay keep application state
+    consistent.
+  </Card>
+  <Card title="Codex and Claude" icon="bot" href="/providers/overview">
+    Register either official adapter, or both, while your application uses the same session and turn
+    API.
+  </Card>
+  <Card title="Built for local apps" icon="app-window" href="/guides/electron">
+    Run Harness in a terminal process or Electron's main process. Provider processes and credentials
+    stay out of the renderer.
+  </Card>
+</Columns>
+
+## One application-facing API
+
+```ts
+import { createHarness } from "@triadlabs/harness-sdk";
+import { createCodexProvider } from "@triadlabs/harness-sdk/codex";
+
+const harness = await createHarness({
+  homeDir: "/path/to/app-data/harness",
+  providers: { codex: createCodexProvider() },
+});
+
+const session = await harness.sessions.create({
+  provider: "codex",
+  cwd: "/path/to/project",
+});
+
+const turn = await session.send({
+  text: "Explain this repository and suggest the first improvement.",
+});
+
+console.log(await turn.done());
+await harness.close();
+```
+
+<Note>
+  `send()` durably accepts work and returns a turn handle. Await `turn.done()` for the terminal
+  result.
+</Note>
+
+## What Harness owns
+
+<Columns cols={2}>
+  <Card title="Sessions and turns" icon="messages-square">
+    Multiple sessions can run concurrently. Each session executes one active turn and queues later
+    sends.
+  </Card>
+  <Card title="Events and projections" icon="radio-tower">
+    Stream normalized messages, tools, permissions, questions, diagnostics, and terminal outcomes.
+  </Card>
+  <Card title="Provider supervision" icon="activity">
+    Start isolated runtimes lazily, interrupt them explicitly, suspend idle sessions, and shut them
+    down cleanly.
+  </Card>
+  <Card title="Crash recovery" icon="rotate-ccw">
+    Fail interrupted work safely after a host restart and keep queued work paused until your
+    application resumes it.
+  </Card>
+</Columns>
+
+## Choose your next step
+
+<Columns cols={3}>
+  <Card title="Install" icon="package" href="/getting-started/installation">
+    Check the Node.js and provider prerequisites.
+  </Card>
+  <Card title="Run a first session" icon="terminal" href="/getting-started/quickstart">
+    Stream a real Codex turn from a small TypeScript program.
+  </Card>
+  <Card title="Build an Electron app" icon="monitor" href="/guides/electron">
+    Keep Harness in the main process behind typed IPC.
+  </Card>
+</Columns>

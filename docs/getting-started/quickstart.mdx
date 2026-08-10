@@ -1,0 +1,99 @@
+---
+title: "Quickstart"
+description: "Create a Codex session, stream its events, and wait for a durable turn result."
+icon: "terminal"
+---
+
+This program creates a persistent Codex session in the current working directory, installs a gap-free subscription, sends one turn, and closes every owned resource.
+
+```ts quickstart.ts
+import { homedir } from "node:os";
+import { join } from "node:path";
+
+import { createHarness, type HarnessEvent } from "@triadlabs/harness-sdk";
+import { createCodexProvider } from "@triadlabs/harness-sdk/codex";
+
+function render(event: HarnessEvent): void {
+  if (event.type === "message.delta") {
+    process.stdout.write(event.data.delta);
+  } else if (event.type === "tool.started") {
+    process.stdout.write(`\n[tool] ${event.data.name}\n`);
+  }
+}
+
+const harness = await createHarness({
+  homeDir: join(homedir(), ".harness-sdk-quickstart"),
+  providers: { codex: createCodexProvider() },
+});
+
+try {
+  const status = await harness.providers.codex.status();
+  if (status.state !== "ready") {
+    throw new Error(`Codex is ${status.state}: ${status.message}`);
+  }
+
+  const session = await harness.sessions.create({
+    provider: "codex",
+    cwd: process.cwd(),
+  });
+
+  const snapshot = await session.snapshot();
+  const subscription = await session.subscribe(
+    { afterSequence: snapshot.sequence },
+    {
+      onEvent: render,
+      onError: (error) => console.error("subscription closed", error),
+    },
+  );
+
+  try {
+    const turn = await session.send({
+      text: "Summarize this repository in five bullets.",
+    });
+    const result = await turn.done();
+    console.log("\nturn result", result);
+  } finally {
+    await subscription.close();
+  }
+} finally {
+  await harness.close();
+}
+```
+
+Run it with a TypeScript runtime or compile it with your application:
+
+```bash
+npx tsx quickstart.ts
+```
+
+## Use Claude instead
+
+Change only the provider import and registration:
+
+```ts
+import { createClaudeProvider } from "@triadlabs/harness-sdk/claude";
+
+const harness = await createHarness({
+  homeDir: join(homedir(), ".harness-sdk-quickstart"),
+  providers: { claude: createClaudeProvider() },
+});
+
+const session = await harness.sessions.create({
+  provider: "claude",
+  cwd: process.cwd(),
+});
+```
+
+<Note>
+  A `Turn` result reports `completed`, `interrupted`, or `failed`. A failure after acceptance is
+  returned by `turn.done()` and may set `mayHaveSideEffects: true`.
+</Note>
+
+<Columns cols={2}>
+  <Card title="Understand the model" icon="boxes" href="/getting-started/core-concepts">
+    Learn how Harness, sessions, turns, events, and interactions fit together.
+  </Card>
+  <Card title="Handle permissions" icon="shield-check" href="/guides/permissions-and-input">
+    Render supervised tool decisions and agent questions in your interface.
+  </Card>
+</Columns>

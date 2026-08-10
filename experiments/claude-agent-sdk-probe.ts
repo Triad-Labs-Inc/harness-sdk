@@ -111,15 +111,15 @@ async function consume(query: Query): Promise<string | undefined> {
 async function main(): Promise<void> {
   const query = await loadQuery();
   record("authentication-contract", {
-    distributedMode: "ANTHROPIC_API_KEY",
+    apiKeySupported: true,
     apiKeyPresent: Boolean(process.env.ANTHROPIC_API_KEY),
-    localClaudeLoginAllowedForProbeOnly: allowLocalLogin,
+    localClaudeLoginEnabledForProbe: allowLocalLogin,
   });
 
   if (!live) return;
   if (!process.env.ANTHROPIC_API_KEY && !allowLocalLogin) {
     throw new Error(
-      "Live Claude probes require ANTHROPIC_API_KEY. Set HARNESS_PROBE_ALLOW_LOCAL_CLAUDE_LOGIN=1 only for local protocol observation; it is not a supported distribution mode.",
+      "Live Claude probes require ANTHROPIC_API_KEY or HARNESS_PROBE_ALLOW_LOCAL_CLAUDE_LOGIN=1.",
     );
   }
 

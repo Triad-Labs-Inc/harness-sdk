@@ -8,8 +8,11 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createHarness, createMemoryStore } from "@triadlabs/harness";
-import { providerContract, type ProviderContractScenario } from "@triadlabs/harness-testkit";
+import { createHarness, createMemoryStore } from "@triadlabs/harness-sdk";
+import {
+  providerContract,
+  type ProviderContractScenario,
+} from "@triadlabs/harness-sdk/testkit/vitest";
 import { expect, it } from "vitest";
 
 import { createClaudeProvider, type ClaudeQueryFactory } from "./adapter.js";

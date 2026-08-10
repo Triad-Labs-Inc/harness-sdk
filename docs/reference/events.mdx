@@ -1,0 +1,74 @@
+---
+title: "Event reference"
+description: "Reference for the durable event envelope and every normalized event family."
+icon: "radio-tower"
+---
+
+Every normalized event has the same immutable envelope:
+
+```ts
+type HarnessEvent = {
+  id: EventId;
+  schemaVersion: 1;
+  sequence: number;
+  sessionId: SessionId;
+  turnId?: TurnId;
+  type: HarnessEventType;
+  timestamp: string;
+  data: Readonly<Record<string, unknown>>;
+  raw?: unknown;
+};
+```
+
+`sequence` is strictly increasing across the store. Events are committed before delivery.
+
+## Session events
+
+| Type                     | Data                       |
+| ------------------------ | -------------------------- |
+| `session.created`        | `provider`, `cwd`          |
+| `session.status_changed` | `state`, optional `reason` |
+| `session.archived`       | Empty object               |
+
+## Turn events
+
+| Type               | Data                          |
+| ------------------ | ----------------------------- |
+| `turn.queued`      | `text`, `paused`              |
+| `turn.started`     | Empty object                  |
+| `turn.completed`   | Empty object                  |
+| `turn.failed`      | `error`, `mayHaveSideEffects` |
+| `turn.interrupted` | Optional `reason`             |
+
+## Message events
+
+| Type                | Data                               |
+| ------------------- | ---------------------------------- |
+| `message.started`   | `messageId`, `role`                |
+| `message.delta`     | `messageId`, `delta`               |
+| `message.completed` | `messageId`, optional final `text` |
+
+## Tool events
+
+| Type             | Data                                            |
+| ---------------- | ----------------------------------------------- |
+| `tool.started`   | `toolId`, `name`, optional `input`              |
+| `tool.updated`   | `toolId`, `update`                              |
+| `tool.completed` | `toolId`, optional `output`, optional `isError` |
+
+## Interaction events
+
+| Type                   | Data                                                     |
+| ---------------------- | -------------------------------------------------------- |
+| `permission.requested` | Harness `requestId`, title, optional tool name and input |
+| `permission.resolved`  | `requestId`, decision or `expired`                       |
+| `input.requested`      | `requestId`, normalized `InputRequest`                   |
+| `input.resolved`       | `requestId`, response or `expired`                       |
+
+## Diagnostics
+
+`diagnostic` carries `level`, `message`, and an optional provider or runtime `code`. A diagnostic is durable application-visible context, not a substitute for a terminal turn event.
+
+## Raw data
+
+The optional `raw` property is controlled by the Harness-wide raw persistence policy. The default `none` policy omits raw native data from storage.

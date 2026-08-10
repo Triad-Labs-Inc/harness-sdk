@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="40" viewBox="0 0 220 40" role="img" aria-label="Harness SDK">
+  <g fill="none" stroke="#065F46" stroke-width="3.5" stroke-linecap="round">
+    <path d="M5 7v26M29 7v26M5 13h24M5 27h24" />
+  </g>
+  <circle cx="17" cy="20" r="3.5" fill="#065F46" />
+  <text x="43" y="25.5" fill="#0B1714" font-family="IBM Plex Mono, ui-monospace, monospace" font-size="18" font-weight="600" letter-spacing="0.4">HARNESS SDK</text>
+</svg>

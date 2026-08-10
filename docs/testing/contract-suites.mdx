@@ -1,0 +1,45 @@
+---
+title: "Vitest contract suites"
+description: "Run the shared provider and storage behavior suites against custom implementations."
+icon: "badge-check"
+---
+
+Vitest-specific contracts live at `@triadlabs/harness-sdk/testkit/vitest`. They are separate from the lightweight fake so production installations do not pull in a test runner.
+
+## Install Vitest
+
+```bash
+npm install --save-dev vitest@4.1.10
+```
+
+## Provider contract
+
+```ts provider-contract.test.ts
+import { providerContract } from "@triadlabs/harness-sdk/testkit/vitest";
+
+import { createFixtureProvider } from "./fixture-provider.js";
+
+providerContract("my provider", async (scenario) => {
+  return createFixtureProvider(scenario);
+});
+```
+
+The factory receives deterministic scenarios for streaming, tools, every permission decision, questions, interruption, failures, crashes, unknown native events, and session resume.
+
+## Storage contract
+
+```ts storage-contract.test.ts
+import { SQLiteStore } from "@triadlabs/harness-sdk";
+import { storageContract } from "@triadlabs/harness-sdk/testkit/vitest";
+
+storageContract("my SQLite configuration", () => {
+  return new SQLiteStore(freshDatabasePath());
+});
+```
+
+The suite checks store-wide sequences, pagination, atomic projections, snapshots, interaction state, recovery, metadata, archiving, deletion, and idempotent close.
+
+<Note>
+  Keep real-provider tests opt-in and separate. Default tests should not require an installed agent,
+  network access, credentials, or paid usage.
+</Note>

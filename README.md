@@ -14,21 +14,33 @@ The first implementation includes the core runtime, memory and SQLite stores, Co
 
 The SDK is a local developer tool. It does not provide a hosted service, user accounts, billing, or a user interface.
 
+Harness SDK is published as one package with explicit provider and testing subpath exports:
+
+- `@triadlabs/harness-sdk` — provider-independent orchestration, storage, events, and lifecycle
+- `@triadlabs/harness-sdk/codex` — Codex app-server adapter
+- `@triadlabs/harness-sdk/claude` — Claude Agent SDK adapter
+- `@triadlabs/harness-sdk/testkit` — deterministic fake provider with no test-runner dependency
+- `@triadlabs/harness-sdk/testkit/vitest` — optional Vitest provider and storage contract suites
+
 ## Requirements
 
 - Node.js 22.13 or newer.
 - An application-owned `homeDir`.
-- Codex installed and authenticated for `@triadlabs/harness-codex`.
-- Claude Code authenticated with `claude auth login`, or Claude API credentials available to the process, for `@triadlabs/harness-claude`.
+- Codex installed and authenticated for `@triadlabs/harness-sdk/codex`.
+- Claude Code authenticated with `claude auth login`, or Claude API credentials available to the process, for `@triadlabs/harness-sdk/claude`.
 
 Real-provider tests are opt-in. The default build and test suite needs no provider installation, network, credentials, or paid usage.
 
 ## Usage
 
+```sh
+npm install @triadlabs/harness-sdk
+```
+
 ```ts
-import { createHarness } from "@triadlabs/harness";
-import { createCodexProvider } from "@triadlabs/harness-codex";
-import { createClaudeProvider } from "@triadlabs/harness-claude";
+import { createHarness } from "@triadlabs/harness-sdk";
+import { createCodexProvider } from "@triadlabs/harness-sdk/codex";
+import { createClaudeProvider } from "@triadlabs/harness-sdk/claude";
 
 const harness = await createHarness({
   homeDir: "/path/to/app-data/harness",
@@ -80,6 +92,16 @@ npm run pack:check
 
 ## Documentation
 
+The developer documentation is live at [harness-sdk.mintlify.app](https://harness-sdk.mintlify.app). Its code-based Mintlify source lives under `docs/` alongside the product contract.
+
+Preview and validate the site locally:
+
+```sh
+npm run docs:dev
+npm run docs:validate
+npm run docs:a11y
+```
+
 - [Product specification](./docs/specification.md): public behavior, terminology, and scope.
 - [Architecture](./docs/architecture.md): package boundaries, process ownership, and runtime flows.
 - [Provider adapters](./docs/provider-adapters.md): adapter contract and the Codex and Claude mappings.
@@ -92,7 +114,6 @@ npm run pack:check
 - [Adapter authoring guide](./docs/adapter-authoring.md): implementing `ProviderAdapterV1`.
 - [Third-party notices](./docs/third-party-notices.md): upstream distribution, authentication, and license constraints.
 - [Implementation status](./docs/implementation-status.md): milestone evidence and test commands.
-- [Codex `/goal` prompt](./GOAL_PROMPT.md): a pasteable prompt for implementing the project.
 
 ## Reference projects and protocols
 

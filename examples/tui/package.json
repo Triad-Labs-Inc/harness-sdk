@@ -9,8 +9,6 @@
     "smoke": "node dist/index.js --smoke"
   },
   "dependencies": {
-    "@triadlabs/harness-claude": "0.1.0",
-    "@triadlabs/harness-codex": "0.1.0",
-    "@triadlabs/harness": "0.1.0"
+    "@triadlabs/harness-sdk": "0.1.0"
   }
 }

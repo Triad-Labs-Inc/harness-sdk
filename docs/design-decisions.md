@@ -7,8 +7,10 @@ This document records decisions already made during the initial design. Contribu
 - The implementation language is TypeScript on Node.js.
 - The first supported application types are Node.js TUIs and Electron applications.
 - Electron uses Harness in the main process. The renderer receives a narrow IPC bridge.
-- Core, Codex, Claude, and test utilities are separate packages.
-- The first public npm identities are `@triadlabs/harness`, `@triadlabs/harness-codex`, `@triadlabs/harness-claude`, and `@triadlabs/harness-testkit`; `@triad-labs` is reserved defensively but is not a publication target.
+- Core, Codex, Claude, and test utilities remain separate internal workspace packages so their source and dependency boundaries can be tested independently.
+- The public distribution is one npm package, `@triadlabs/harness-sdk`. Codex, Claude, and test utilities are explicit package subpath exports at `/codex`, `/claude`, and `/testkit`, following the single-package export-map model used by [Email SDK](https://github.com/opencoredev/email-sdk/blob/main/packages/email-sdk/package.json). The deterministic fake stays dependency-free at `/testkit`; Vitest-specific contracts live at `/testkit/vitest` behind an optional peer dependency.
+- The root entrypoint exports only provider-independent core APIs. Importing `@triadlabs/harness-sdk` does not evaluate either provider adapter. The assembled npm package includes the provider runtime dependencies needed by its subpaths.
+- `@triad-labs` is reserved defensively but is not a publication target.
 - Provider adapters use a public `ProviderAdapterV1` contract.
 - Adapters are registered explicitly. There is no automatic plugin discovery.
 

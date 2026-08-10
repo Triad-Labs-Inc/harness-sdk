@@ -2,7 +2,7 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { InMemoryStore, SQLiteStore, type SessionId, type TurnId } from "@triadlabs/harness";
+import { InMemoryStore, SQLiteStore, type SessionId, type TurnId } from "@triadlabs/harness-sdk";
 import { describe, expect, it } from "vitest";
 
 import { storageContract } from "./storage-contract.js";

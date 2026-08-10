@@ -1,0 +1,84 @@
+---
+title: "Claude"
+description: "Use the Claude Agent SDK with local Claude Code authentication and durable Harness sessions."
+icon: "sparkles"
+---
+
+The Claude adapter calls `@anthropic-ai/claude-agent-sdk` directly. It does not scrape an interactive terminal interface.
+
+## Setup
+
+Authenticate Claude Code with `claude auth login`, or make supported API credentials available to the application process. Then register the adapter:
+
+```ts
+import { createHarness } from "@triadlabs/harness-sdk";
+import { createClaudeProvider } from "@triadlabs/harness-sdk/claude";
+
+const harness = await createHarness({
+  homeDir: "/path/to/app-data/harness",
+  providers: {
+    claude: createClaudeProvider(),
+  },
+});
+```
+
+Harness delegates credential access to Claude Code. It does not extract or store OAuth tokens, subscription credentials, or API keys.
+
+## Configuration
+
+```ts
+const claude = createClaudeProvider({
+  executable: "/absolute/path/to/claude",
+  environment: async () => ({
+    ANTHROPIC_API_KEY: await loadApiKey(),
+  }),
+  settingSources: ["user", "project", "local"],
+  statusTimeoutMs: 25_000,
+});
+```
+
+| Option            | Description                                                                                          |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| `executable`      | Optional exact Claude Code executable path or async resolver.                                        |
+| `environment`     | Async environment override resolver, evaluated when a runtime starts.                                |
+| `settingSources`  | Sources passed to the Agent SDK. Defaults to `user`, `project`, and `local`; use `[]` for isolation. |
+| `statusTimeoutMs` | Timeout for the no-prompt authentication probe. Defaults to 25 seconds.                              |
+
+The public options also expose `queryFactory` for deterministic integration and adapter testing. Production applications normally use the default SDK query implementation.
+
+## Status probe
+
+`status()` starts a non-persistent Agent SDK initialization, reads only initialization account metadata, sends no user prompt, and closes before any model request.
+
+The probe can recognize authentication supplied through:
+
+- an existing local Claude.ai login used by Claude Code;
+- API credentials in the process environment;
+- supported external backends reported by the runtime.
+
+## Permissions and questions
+
+Claude's `canUseTool` callback maps to two separate Harness interactions:
+
+- ordinary tool approval becomes `permission.requested`;
+- `AskUserQuestion` becomes `input.requested`.
+
+The adapter keeps native callbacks in memory while your application renders a response interface. The durable Harness request ID is the only ID your application needs.
+
+## Distribution responsibility
+
+<Warning>
+  Anthropic's Agent SDK documentation states that third-party developers generally may not offer
+  Claude.ai login or subscription rate limits in their products without prior approval. Verify the
+  terms and approval requirements for your own distribution model.
+</Warning>
+
+Harness supports a bring-your-own-runtime path; it does not make an account-entitlement or legal determination for the embedding application.
+
+<Card
+  title="Claude Agent SDK documentation"
+  icon="external-link"
+  href="https://code.claude.com/docs/en/agent-sdk/overview"
+>
+  Review current authentication, permissions, and distribution requirements from Anthropic.
+</Card>

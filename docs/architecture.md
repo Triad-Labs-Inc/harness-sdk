@@ -6,10 +6,10 @@ This document explains how Harness SDK is divided and how data moves through it.
 
 ```text
 packages/
-  core/              Public API, orchestration, event model, storage contracts
-  provider-codex/    Codex app-server process and protocol adapter
-  provider-claude/   Claude Agent SDK adapter
-  testkit/           Fake provider and provider contract tests
+  core/              Public package root, orchestration, event model, storage contracts
+  provider-codex/    Internal workspace assembled as the public /codex subpath
+  provider-claude/   Internal workspace assembled as the public /claude subpath
+  testkit/           Internal workspace assembled as the public /testkit subpath
 examples/
   tui/               Reference terminal application
   electron/          Reference Electron main-process integration
@@ -18,7 +18,7 @@ experiments/
   claude-agent-sdk-probe.ts
 ```
 
-The core package must not import either official provider package. Provider packages depend on core contracts. This keeps the core usable by future OpenCode, Goose, Pi, and third-party adapters.
+The core source package must not import either official provider package. Provider workspaces depend on core contracts. Release builds assemble their compiled entrypoints into the single `@triadlabs/harness-sdk` tarball, while the root export remains provider-independent. This keeps the core usable by future OpenCode, Goose, Pi, and third-party adapters without exposing multiple npm package identities.
 
 SQLite is the default store and may live in the core package for the first release. Storage remains behind an interface so tests can use memory and future applications can supply another implementation.
 

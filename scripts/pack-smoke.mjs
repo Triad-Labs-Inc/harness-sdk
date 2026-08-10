@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,50 +18,57 @@ const fixture = join(temporary, "fixture");
 await mkdir(packs);
 await mkdir(fixture);
 
-const packages = [
-  "packages/core",
-  "packages/provider-codex",
-  "packages/provider-claude",
-  "packages/testkit",
-];
-
 try {
-  const tarballs = [];
-  for (const packageDirectory of packages) {
-    const { stdout } = await runNpm(
-      ["pack", join(root, packageDirectory), "--json", "--pack-destination", packs],
-      { cwd: root },
-    );
-    const packed = JSON.parse(stdout)[0];
-    const names = new Set(packed.files.map((file) => file.path));
-    for (const required of [
-      "package.json",
-      "dist/index.js",
-      "dist/index.d.ts",
-      "README.md",
-      "LICENSE",
-    ]) {
-      if (!names.has(required)) {
-        throw new Error(`${packed.filename} is missing ${required}`);
-      }
+  const { stdout } = await runNpm(
+    ["pack", join(root, "packages/core"), "--json", "--pack-destination", packs],
+    { cwd: root },
+  );
+  const packed = JSON.parse(stdout)[0];
+  const names = new Set(packed.files.map((file) => file.path));
+  for (const required of [
+    "package.json",
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/codex/index.js",
+    "dist/codex/index.d.ts",
+    "dist/claude/index.js",
+    "dist/claude/index.d.ts",
+    "dist/testkit/index.js",
+    "dist/testkit/index.d.ts",
+    "dist/testkit/vitest.js",
+    "dist/testkit/vitest.d.ts",
+    "README.md",
+    "LICENSE",
+  ]) {
+    if (!names.has(required)) {
+      throw new Error(`${packed.filename} is missing ${required}`);
     }
-    tarballs.push(join(packs, packed.filename));
   }
+  if ([...names].some((name) => name.endsWith(".tsbuildinfo"))) {
+    throw new Error(`${packed.filename} contains TypeScript build state`);
+  }
+  const tarball = join(packs, packed.filename);
 
   await writeFile(
     join(fixture, "package.json"),
     JSON.stringify({ name: "harness-clean-install", private: true, type: "module" }, null, 2),
   );
-  await runNpm(["install", "--ignore-scripts", ...tarballs], { cwd: fixture });
+  await runNpm(["install", "--ignore-scripts", tarball], { cwd: fixture });
+  try {
+    await access(join(fixture, "node_modules/vitest/package.json"));
+    throw new Error("A normal Harness install unexpectedly included optional Vitest");
+  } catch (error) {
+    if (error instanceof Error && !error.message.includes("ENOENT")) throw error;
+  }
   await writeFile(
     join(fixture, "smoke.mjs"),
     `import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createHarness, createMemoryStore } from "@triadlabs/harness";
-import { FakeProviderController, fakeProvider } from "@triadlabs/harness-testkit";
-import { createCodexProvider } from "@triadlabs/harness-codex";
-import { createClaudeProvider } from "@triadlabs/harness-claude";
+import { createHarness, createMemoryStore } from "@triadlabs/harness-sdk";
+import { FakeProviderController, fakeProvider } from "@triadlabs/harness-sdk/testkit";
+import { createCodexProvider } from "@triadlabs/harness-sdk/codex";
+import { createClaudeProvider } from "@triadlabs/harness-sdk/claude";
 
 const controller = new FakeProviderController();
 controller.enqueue(controller.script({ type: "text", chunks: ["packaged"] }, { type: "complete" }));
@@ -82,15 +89,31 @@ await harness.close();
   );
   await run(process.execPath, [join(fixture, "smoke.mjs")], { cwd: fixture });
 
+  await runNpm(["install", "--ignore-scripts", "--save-dev", "vitest@4.1.10"], {
+    cwd: fixture,
+  });
+  await writeFile(
+    join(fixture, "contract-smoke.mjs"),
+    `import { providerContract, storageContract } from "@triadlabs/harness-sdk/testkit/vitest";
+if (typeof providerContract !== "function" || typeof storageContract !== "function") {
+  throw new Error("Vitest contract-suite exports are unavailable");
+}
+`,
+  );
+  await run(process.execPath, [join(fixture, "contract-smoke.mjs")], { cwd: fixture });
+
   await writeFile(
     join(fixture, "declarations.ts"),
-    `import { createHarness, type ProviderAdapterV1 } from "@triadlabs/harness";
-import { createCodexProvider } from "@triadlabs/harness-codex";
-import { createClaudeProvider } from "@triadlabs/harness-claude";
-import { fakeProvider } from "@triadlabs/harness-testkit";
+    `import { createHarness, type ProviderAdapterV1 } from "@triadlabs/harness-sdk";
+import { createCodexProvider } from "@triadlabs/harness-sdk/codex";
+import { createClaudeProvider } from "@triadlabs/harness-sdk/claude";
+import { fakeProvider } from "@triadlabs/harness-sdk/testkit";
+import { providerContract, storageContract } from "@triadlabs/harness-sdk/testkit/vitest";
 
 const adapters: ProviderAdapterV1[] = [createCodexProvider(), createClaudeProvider(), fakeProvider()];
 void createHarness({ homeDir: ".", providers: Object.fromEntries(adapters.map(a => [a.id, a])) });
+void providerContract;
+void storageContract;
 `,
   );
   await writeFile(
@@ -117,7 +140,7 @@ void createHarness({ homeDir: ".", providers: Object.fromEntries(adapters.map(a 
     { cwd: fixture },
   );
   process.stdout.write(
-    "Package tarball, clean install, runtime, and declaration smoke tests passed\n",
+    "Package tarball, dependency-light install, runtime, optional Vitest, and declaration smoke tests passed\n",
   );
 } finally {
   await rm(temporary, { recursive: true, force: true });

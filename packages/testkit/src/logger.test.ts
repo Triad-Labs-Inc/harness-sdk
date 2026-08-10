@@ -2,7 +2,7 @@ import { mkdtemp, readdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { Redactor, RotatingFileLogger } from "@triadlabs/harness";
+import { Redactor, RotatingFileLogger } from "@triadlabs/harness-sdk";
 import { describe, expect, it } from "vitest";
 
 describe("operational logger", () => {

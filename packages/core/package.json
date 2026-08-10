@@ -1,7 +1,7 @@
 {
-  "name": "@triadlabs/harness",
+  "name": "@triadlabs/harness-sdk",
   "version": "0.1.0",
-  "description": "Provider-independent orchestration, durable events, SQLite persistence, and recovery for local coding agents.",
+  "description": "A durable TypeScript SDK for building local Codex and Claude agent applications.",
   "type": "module",
   "license": "MIT",
   "author": "Triad Labs",
@@ -27,11 +27,29 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "import": "./dist/index.js"
+    },
+    "./codex": {
+      "types": "./dist/codex/index.d.ts",
+      "import": "./dist/codex/index.js"
+    },
+    "./claude": {
+      "types": "./dist/claude/index.d.ts",
+      "import": "./dist/claude/index.js"
+    },
+    "./testkit": {
+      "types": "./dist/testkit/index.d.ts",
+      "import": "./dist/testkit/index.js"
+    },
+    "./testkit/vitest": {
+      "types": "./dist/testkit/vitest.d.ts",
+      "import": "./dist/testkit/vitest.js"
     }
   },
   "files": [
     "dist",
+    "src/**/*.ts",
+    "!src/**/*.test.ts",
     "README.md",
     "LICENSE"
   ],
@@ -41,8 +59,20 @@
   "publishConfig": {
     "access": "public"
   },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.226",
+    "cross-spawn": "7.0.6"
+  },
+  "peerDependencies": {
+    "vitest": "4.1.10"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
+  },
   "scripts": {
     "build": "tsc -b",
-    "prepack": "npm run build"
+    "prepack": "npm --prefix ../.. run build:package"
   }
 }

@@ -1,6 +1,7 @@
 {
-  "name": "@triadlabs/harness-codex",
+  "name": "@triadlabs/harness-sdk-internal-codex",
   "version": "0.1.0",
+  "private": true,
   "description": "Codex app-server provider adapter for Triad Labs Harness SDK.",
   "type": "module",
   "license": "MIT",
@@ -37,15 +38,11 @@
   "engines": {
     "node": ">=22.13"
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "dependencies": {
-    "@triadlabs/harness": "0.1.0",
+    "@triadlabs/harness-sdk": "0.1.0",
     "cross-spawn": "7.0.6"
   },
   "devDependencies": {
-    "@triadlabs/harness-testkit": "0.1.0",
     "vitest": "4.1.10"
   },
   "scripts": {

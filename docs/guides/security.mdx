@@ -1,0 +1,59 @@
+---
+title: "Security and data boundaries"
+description: "Keep credentials, provider data, and Electron privileges inside explicit trust boundaries."
+icon: "shield"
+---
+
+Harness is a local runtime with access to working directories and coding-agent processes. Treat its host process as privileged application infrastructure.
+
+## Credentials and environment values
+
+Provider environment resolvers run when a runtime starts. Harness registers returned values for redaction and never persists or logs those values.
+
+```ts
+const codex = createCodexProvider({
+  environment: async () => ({
+    OPENAI_API_KEY: await credentials.get("openai"),
+  }),
+});
+```
+
+Do not place credentials in session metadata, prompts, provider options that are persisted, or renderer IPC messages.
+
+## Raw native events
+
+Raw persistence defaults to `none`:
+
+```ts
+const harness = await createHarness({
+  homeDir,
+  providers,
+  rawEvents: "none",
+});
+```
+
+| Mode     | Persistence behavior                                                      |
+| -------- | ------------------------------------------------------------------------- |
+| `none`   | Never store native payloads. Default.                                     |
+| `errors` | Store redacted raw data only for failures and diagnostics.                |
+| `all`    | Store redacted native payloads when available for every normalized event. |
+
+Treat databases created with `all` as potentially sensitive even after redaction.
+
+## Permissions
+
+Supervised permissions and agent questions are separate. Validate provider-provided titles, tool names, inputs, prompts, and options before rendering. Require a user or explicit product policy to grant full access.
+
+## Electron
+
+Keep Harness in the main process. Use context isolation, disable renderer Node.js integration, validate IPC arguments, and expose a narrow preload API.
+
+## Ownership boundaries
+
+Harness owns only the processes and database records it creates. It does not:
+
+- install or authenticate providers;
+- attach to arbitrary terminal processes;
+- delete provider-owned history or configuration;
+- delete repository files when a session is removed;
+- coordinate multiple host processes sharing one `homeDir`.

@@ -1,0 +1,88 @@
+---
+title: "Build an Electron application"
+description: "Keep Harness in Electron's main process and expose a narrow typed IPC bridge."
+icon: "monitor"
+---
+
+Create Harness in Electron's main process. The renderer should never receive provider executables, environment values, SQLite access, or arbitrary process-spawning privileges.
+
+```text
+Renderer
+   │ typed IPC
+   ▼
+Electron main process
+├── Harness SDK
+├── SQLite in app.getPath("userData")
+└── provider runtimes
+```
+
+## Initialize in the main process
+
+```ts
+import { join } from "node:path";
+
+import { createHarness } from "@triadlabs/harness-sdk";
+import { createCodexProvider } from "@triadlabs/harness-sdk/codex";
+import { app } from "electron";
+
+await app.whenReady();
+
+const harness = await createHarness({
+  homeDir: join(app.getPath("userData"), "harness"),
+  providers: { codex: createCodexProvider() },
+});
+```
+
+## Validate IPC inputs
+
+Load sessions and call public APIs in `ipcMain` handlers. Validate every value received from the renderer before casting branded IDs or permission responses.
+
+```ts
+ipcMain.handle("harness:send", async (_event, sessionId, text) => {
+  if (typeof sessionId !== "string" || typeof text !== "string") {
+    throw new Error("Invalid send request");
+  }
+
+  const session = await harness.sessions.load(sessionId as SessionId);
+  const turn = await session.send({ text });
+  return turn.id;
+});
+```
+
+## Bridge serializable state
+
+Expose only product-level operations from preload:
+
+```ts
+contextBridge.exposeInMainWorld("agent", {
+  send: (sessionId: string, text: string) => ipcRenderer.invoke("harness:send", sessionId, text),
+  onEvent: (listener: (event: HarnessEvent) => void) => {
+    const wrapped = (_event: Electron.IpcRendererEvent, value: HarnessEvent) => listener(value);
+    ipcRenderer.on("harness:event", wrapped);
+    return () => ipcRenderer.removeListener("harness:event", wrapped);
+  },
+});
+```
+
+Take a snapshot in the main process, subscribe after its sequence, and forward only JSON-serializable projections and events.
+
+## Close before quitting
+
+```ts
+let closing = false;
+
+app.on("before-quit", (event) => {
+  if (closing) return;
+  event.preventDefault();
+  closing = true;
+  void harness.close().finally(() => app.quit());
+});
+```
+
+<Card
+  title="Reference Electron application"
+  icon="github"
+  href="https://github.com/Triad-Labs-Inc/harness-sdk/tree/main/examples/electron"
+>
+  See the complete main, preload, renderer, permission, input, and smoke-test implementation.
+</Card>

@@ -11,7 +11,7 @@ import type {
   ProviderRuntime,
   ProviderStatus,
   ProviderTurnRequest,
-} from "@triadlabs/harness";
+} from "@triadlabs/harness-sdk";
 
 import {
   CodexAppServerClient,

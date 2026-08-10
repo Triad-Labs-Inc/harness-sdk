@@ -1,0 +1,77 @@
+---
+title: "Codex"
+description: "Run Codex through one supervised app-server process per active Harness session."
+icon: "square-terminal"
+---
+
+The Codex adapter communicates with `codex app-server` over standard input and output. Harness starts and owns the process; it does not attach to an arbitrary terminal.
+
+## Setup
+
+Install and authenticate the Codex CLI, then register the adapter:
+
+```ts
+import { createHarness } from "@triadlabs/harness-sdk";
+import { createCodexProvider } from "@triadlabs/harness-sdk/codex";
+
+const harness = await createHarness({
+  homeDir: "/path/to/app-data/harness",
+  providers: {
+    codex: createCodexProvider(),
+  },
+});
+```
+
+The default executable is `codex`, and the default app-server arguments are `['app-server']`.
+
+## Configuration
+
+```ts
+const codex = createCodexProvider({
+  executable: "/absolute/path/to/codex",
+  environment: async () => ({
+    OPENAI_API_KEY: await loadApiKey(),
+  }),
+  requestTimeoutMs: 30_000,
+  approvalPolicy: "on-request",
+  sandbox: "workspace-write",
+});
+```
+
+| Option             | Description                                                                               |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| `executable`       | An exact string or async resolver. Defaults to `codex`.                                   |
+| `environment`      | Async environment override resolver, evaluated when a runtime starts.                     |
+| `appServerArgs`    | Arguments used to start app-server. Defaults to `['app-server']`.                         |
+| `requestTimeoutMs` | Timeout for app-server request/response operations.                                       |
+| `approvalPolicy`   | Explicit Codex approval override: `untrusted`, `on-failure`, `on-request`, or `never`.    |
+| `sandbox`          | Explicit Codex sandbox override: `read-only`, `workspace-write`, or `danger-full-access`. |
+
+<Warning>
+  Return only the environment entries you intend to override. Environment values are registered for
+  redaction and are never persisted, but your resolver still controls which values reach Codex.
+</Warning>
+
+## Native mapping
+
+| Harness operation     | Codex app-server operation |
+| --------------------- | -------------------------- |
+| Create session        | `thread/start`             |
+| Resume session        | `thread/resume`            |
+| Send turn             | `turn/start`               |
+| Steer active turn     | `turn/steer`               |
+| Interrupt active turn | `turn/interrupt`           |
+
+Harness persists the native thread ID as opaque provider metadata. Applications use only the Harness session ID.
+
+## Questions and collaboration modes
+
+Harness normalizes Codex user-input requests when app-server emits them. Provider behavior can still depend on the selected Codex collaboration mode. Your application should rely on the reported event stream rather than assume every prompt can trigger a question.
+
+<Card
+  title="Codex app-server source"
+  icon="external-link"
+  href="https://github.com/openai/codex/tree/main/codex-rs/app-server"
+>
+  Review the upstream protocol implementation and generated schema commands.
+</Card>

@@ -1,8 +1,8 @@
 # API reference
 
-Harness SDK exposes four packages. Applications register adapters explicitly; core never imports an official provider package.
+Harness SDK publishes one package with four public entrypoints. Applications register adapters explicitly; the root entrypoint never imports an official provider package.
 
-## `@triadlabs/harness`
+## `@triadlabs/harness-sdk`
 
 ### `createHarness(options)`
 
@@ -62,7 +62,7 @@ Permission decisions are `allow_once`, `allow_session`, `deny`, and `cancel_turn
 
 `HarnessStore`, `InMemoryStore`, `SQLiteStore`, `ProviderAdapterV1`, `ProviderRuntime`, and the normalized provider/event types are public exports. Adapter API version 1 is structural and checked at registration.
 
-## `@triadlabs/harness-codex`
+## `@triadlabs/harness-sdk/codex`
 
 `createCodexProvider(options?)` starts one supervised `codex app-server` stdio process per active session runtime.
 
@@ -73,7 +73,7 @@ Permission decisions are `allow_once`, `allow_session`, `deny`, and `cancel_turn
 
 The adapter persists only the native thread ID as opaque provider metadata.
 
-## `@triadlabs/harness-claude`
+## `@triadlabs/harness-sdk/claude`
 
 `createClaudeProvider(options?)` uses `@anthropic-ai/claude-agent-sdk.query()`.
 
@@ -84,6 +84,10 @@ The adapter persists only the native thread ID as opaque provider metadata.
 
 Provider status starts a non-persistent Agent SDK initialization, sends no user prompt, and accepts authentication delegated by Claude Code. This includes an existing local Claude.ai subscription login, API credentials, and supported external backends reported by the runtime. The adapter stores only the native SDK session ID for resume; credentials and environment values are not persisted. Claude does not advertise steering in version 1.
 
-## `@triadlabs/harness-testkit`
+## `@triadlabs/harness-sdk/testkit`
 
-Exports `FakeProviderController`, `fakeProvider()`, `storageContract()`, and `providerContract()`. The fake supports deterministic text, tools, permissions, questions, delays, diagnostics, failures, crashes, and interruption.
+Exports `FakeProviderController` and `fakeProvider()`. The fake supports deterministic text, tools, permissions, questions, delays, diagnostics, failures, crashes, and interruption without importing a test runner.
+
+## `@triadlabs/harness-sdk/testkit/vitest`
+
+Exports `storageContract()` and `providerContract()` for Vitest users who implement custom stores or provider adapters. Vitest is an optional peer dependency and is not installed for production consumers that use only the root, Codex, Claude, or lightweight testkit entrypoints.

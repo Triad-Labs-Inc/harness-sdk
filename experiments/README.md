@@ -9,7 +9,7 @@ Both probes redact identifiers, paths, credentials, and token-like fields before
 ```bash
 node experiments/codex-app-server-probe.ts
 HARNESS_RUN_LIVE_PROBES=1 \
-HARNESS_PROBE_FIXTURE=experiments/fixtures/codex-0.147.0.jsonl \
+HARNESS_PROBE_FIXTURE=experiments/fixtures/codex-app-server-observed.jsonl \
 node experiments/codex-app-server-probe.ts
 ```
 
@@ -17,7 +17,7 @@ The non-live run validates startup, `initialize`/`initialized`, `account/read`, 
 
 ## Claude
 
-Install `@anthropic-ai/claude-agent-sdk` or point at an unpacked ESM entry with `CLAUDE_AGENT_SDK_ENTRY`. Distributed products must supply `ANTHROPIC_API_KEY`; a local Claude login is available only as an explicit probe override and is not a supported Harness authentication mode.
+Install `@anthropic-ai/claude-agent-sdk` or point at an unpacked ESM entry with `CLAUDE_AGENT_SDK_ENTRY`. Live probes require an explicit authentication opt-in so they cannot consume model usage accidentally. Use `ANTHROPIC_API_KEY`, or set `HARNESS_PROBE_ALLOW_LOCAL_CLAUDE_LOGIN=1` to exercise an existing Claude Code login.
 
 ```bash
 CLAUDE_AGENT_SDK_ENTRY=/path/to/sdk.mjs \
@@ -27,8 +27,8 @@ node experiments/claude-agent-sdk-probe.ts
 ANTHROPIC_API_KEY=... \
 CLAUDE_EXECUTABLE=/absolute/path/to/claude \
 HARNESS_RUN_LIVE_PROBES=1 \
-HARNESS_PROBE_FIXTURE=experiments/fixtures/claude-agent-sdk-0.3.226.jsonl \
+HARNESS_PROBE_FIXTURE=experiments/fixtures/claude-agent-sdk-observed.jsonl \
 node experiments/claude-agent-sdk-probe.ts
 ```
 
-For local protocol observation only, `HARNESS_PROBE_ALLOW_LOCAL_CLAUDE_LOGIN=1` allows the installed Claude login to be used. Do not use that mode in a distributed product.
+Harness applications may use the authenticated Claude Code runtime or API credentials. The probe-specific flag exists only to keep paid live calls opt-in.

@@ -1,0 +1,87 @@
+---
+title: "Permissions and agent input"
+description: "Render supervised tool decisions and structured agent questions as separate interactions."
+icon: "shield-check"
+---
+
+Harness separates permissions from agent questions. Both arrive as durable events, but they use different response types and application interfaces.
+
+## Handle permission requests
+
+```ts
+async function handlePermission(
+  event: Extract<HarnessEvent, { type: "permission.requested" }>,
+): Promise<void> {
+  const decision = await showPermissionDialog({
+    title: event.data.title,
+    toolName: event.data.toolName,
+    input: event.data.input,
+  });
+
+  await session.respondToPermission(event.data.requestId, decision);
+}
+```
+
+Permission decisions are:
+
+```ts
+type PermissionDecision =
+  | { decision: "allow_once" }
+  | { decision: "allow_session" }
+  | { decision: "deny"; reason?: string }
+  | { decision: "cancel_turn"; reason?: string };
+```
+
+`supervised` is the default permission mode. Enable `full_access` only through an explicit application decision.
+
+## Handle agent questions
+
+```ts
+async function handleInput(
+  event: Extract<HarnessEvent, { type: "input.requested" }>,
+): Promise<void> {
+  const answers = await showQuestionForm(event.data.request);
+
+  await session.respondToInput(event.data.requestId, {
+    answers,
+  });
+}
+```
+
+Answers are keyed by the normalized Harness question ID, and every value is an array:
+
+```ts
+await session.respondToInput(requestId, {
+  answers: {
+    database: ["sqlite"],
+    reviewers: ["security", "performance"],
+    notes: ["Keep the public API unchanged"],
+  },
+});
+```
+
+The adapter translates stable Harness IDs back into the native provider response format.
+
+## Route interactions without blocking subscriptions
+
+```ts
+const subscription = await session.subscribe(
+  { afterSequence: snapshot.sequence },
+  {
+    onEvent: (event) => {
+      if (event.type === "permission.requested") {
+        void handlePermission(event);
+      } else if (event.type === "input.requested") {
+        void handleInput(event);
+      }
+    },
+  },
+);
+```
+
+Track pending UI work by `requestId`. After a host restart, unresolved interactions expire because their provider-native callbacks no longer exist.
+
+<Warning>
+  Treat tool names and inputs as untrusted provider output. Validate and escape them before
+  rendering, and never turn a provider request into an automatic full-access decision.
+</Warning>

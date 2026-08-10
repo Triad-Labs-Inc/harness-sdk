@@ -2,7 +2,7 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createHarness, createMemoryStore } from "@triadlabs/harness";
+import { createHarness, createMemoryStore } from "@triadlabs/harness-sdk";
 import { describe, expect, it } from "vitest";
 
 import { createCodexProvider } from "./adapter.js";

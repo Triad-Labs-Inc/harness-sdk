@@ -1,0 +1,87 @@
+---
+title: "ProviderAdapterV1"
+description: "Implement a versioned adapter for another local coding-agent runtime."
+icon: "plug"
+---
+
+Implement `ProviderAdapterV1` from the package root and register the adapter explicitly under the same ID.
+
+```ts
+import type { ProviderAdapterV1, ProviderRuntime } from "@triadlabs/harness-sdk";
+
+export const adapter: ProviderAdapterV1 = {
+  apiVersion: 1,
+  id: "example",
+
+  async status(context) {
+    const credential = await resolveCredential();
+    context.registerSecrets([credential]);
+    return { state: "ready", version: "1.0.0" };
+  },
+
+  async capabilities() {
+    return {
+      steering: false,
+      interruption: true,
+      permissions: true,
+      questions: true,
+      sessionResume: true,
+      modelOverride: false,
+      reasoningOverride: false,
+      rawEvents: true,
+    };
+  },
+
+  async openSession(context): Promise<ProviderRuntime> {
+    return createRuntime(context);
+  },
+};
+```
+
+## Adapter contract
+
+```ts
+interface ProviderAdapterV1 {
+  readonly apiVersion: 1;
+  readonly id: string;
+  status(context: ProviderContext): Promise<ProviderStatus>;
+  capabilities(context: ProviderContext): Promise<ProviderCapabilities>;
+  openSession(context: OpenSessionContext): Promise<ProviderRuntime>;
+}
+```
+
+`OpenSessionContext` supplies the Harness session ID, fixed working directory, secret registration, and opaque metadata access for native resume identifiers.
+
+## Runtime contract
+
+```ts
+interface ProviderRuntime {
+  startTurn(request: ProviderTurnRequest): AsyncIterable<ProviderEvent>;
+  steer?(request: { text: string }): Promise<void>;
+  interrupt?(): Promise<void>;
+  respondToPermission?(response: ProviderPermissionResponse): Promise<void>;
+  respondToInput?(response: ProviderInputResponse): Promise<void>;
+  close(): Promise<void>;
+}
+```
+
+## Required behavior
+
+- Keep native session and turn IDs internal.
+- Preserve native event order when yielding normalized events.
+- Let core persist and deliver events; do not call application observers.
+- Keep native permission and input callbacks separate.
+- Treat unknown additive native messages as ignorable or diagnostic.
+- Never replay an accepted turn after a crash.
+- Make `close()` idempotent and terminate only resources created by the adapter.
+- Register resolved secret values before they can enter errors, metadata, events, or logs.
+
+## Test the adapter
+
+```ts
+import { providerContract } from "@triadlabs/harness-sdk/testkit/vitest";
+
+providerContract("example", (scenario) => fixtureAdapter(scenario));
+```
+
+Use deterministic native fixtures for the shared contract. Keep real-provider tests opt-in.

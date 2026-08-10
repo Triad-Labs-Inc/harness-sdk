@@ -1,0 +1,60 @@
+---
+title: "Storage reference"
+description: "Use the default SQLite store, the in-memory test store, or a custom HarnessStore."
+icon: "database"
+---
+
+Harness uses SQLite at `homeDir/harness.sqlite3` unless you pass a custom store.
+
+## SQLite
+
+```ts
+const harness = await createHarness({
+  homeDir: "/path/to/app-data/harness",
+  providers,
+});
+```
+
+The built-in `SQLiteStore` uses foreign keys, write-ahead logging, full synchronous durability, and a five-second busy timeout. Migrations run before providers start.
+
+You may construct it directly when you need an explicit path:
+
+```ts
+import { SQLiteStore, createHarness } from "@triadlabs/harness-sdk";
+
+const store = new SQLiteStore("/path/to/custom.sqlite3");
+const harness = await createHarness({ homeDir, providers, store });
+```
+
+## In-memory storage
+
+```ts
+import { createHarness, createMemoryStore } from "@triadlabs/harness-sdk";
+
+const harness = await createHarness({
+  homeDir: "/unused/in-memory-test",
+  providers,
+  store: createMemoryStore(),
+});
+```
+
+Use it for tests or intentionally ephemeral programs only.
+
+## `HarnessStore`
+
+The public interface covers:
+
+- open, recovery, and close;
+- session create, list, archive, and delete;
+- turn acceptance and queue state;
+- atomic event append and projection updates;
+- snapshots and paginated history;
+- store-wide sequence reads;
+- interaction state;
+- opaque provider resume metadata.
+
+Run `storageContract()` against a custom implementation before using it in an application.
+
+## Backup and ownership
+
+One application process should own a `homeDir`. Before upgrading or backing up, close Harness and copy `harness.sqlite3` with its `-wal` and `-shm` companions as one set.

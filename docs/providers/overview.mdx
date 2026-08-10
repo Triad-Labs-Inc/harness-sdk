@@ -1,0 +1,74 @@
+---
+title: "Provider overview"
+description: "Register local coding-agent providers and build interfaces around explicit capabilities."
+icon: "bot"
+---
+
+Provider adapters translate native agent operations into the same Harness session, turn, event, permission, and input model.
+
+## Register providers explicitly
+
+```ts
+import { createHarness } from "@triadlabs/harness-sdk";
+import { createClaudeProvider } from "@triadlabs/harness-sdk/claude";
+import { createCodexProvider } from "@triadlabs/harness-sdk/codex";
+
+const harness = await createHarness({
+  homeDir: "/path/to/app-data/harness",
+  providers: {
+    codex: createCodexProvider(),
+    claude: createClaudeProvider(),
+  },
+});
+```
+
+The registration key must match the adapter's `id`. A session selects one registered provider and keeps it for its entire lifetime.
+
+## Status is separate from session state
+
+Call `status()` before presenting a provider as available:
+
+```ts
+const statuses = Object.fromEntries(
+  await Promise.all(
+    Object.entries(harness.providers).map(async ([id, provider]) => [id, await provider.status()]),
+  ),
+);
+```
+
+Status returns one of four states:
+
+| State               | Meaning                                                              |
+| ------------------- | -------------------------------------------------------------------- |
+| `ready`             | The provider can open a session. A version may be present.           |
+| `not_installed`     | Harness could not find or execute the configured provider runtime.   |
+| `not_authenticated` | The runtime is installed but has no usable authentication.           |
+| `unavailable`       | The provider could not complete its status check for another reason. |
+
+## Capabilities drive your interface
+
+```ts
+const capabilities = await harness.providers.claude.capabilities();
+
+if (capabilities.steering) {
+  showSteerButton();
+}
+```
+
+Harness also enforces capabilities. Calling an unsupported operation fails with `UnsupportedCapabilityError` before the SDK accepts it.
+
+| Capability         | Codex | Claude |
+| ------------------ | ----- | ------ |
+| Steering           | Yes   | No     |
+| Interruption       | Yes   | Yes    |
+| Permissions        | Yes   | Yes    |
+| Questions          | Yes   | Yes    |
+| Session resume     | Yes   | Yes    |
+| Model override     | Yes   | Yes    |
+| Reasoning override | Yes   | Yes    |
+| Raw native events  | Yes   | Yes    |
+
+<Note>
+  Harness does not install providers, perform login, or automatically discover adapters. Your
+  application decides how to explain an unavailable status to the user.
+</Note>

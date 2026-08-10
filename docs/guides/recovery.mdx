@@ -1,0 +1,57 @@
+---
+title: "Crash recovery"
+description: "Recover accepted work safely after host restarts and provider failures."
+icon: "rotate-ccw"
+---
+
+Harness distinguishes a host restart from a provider crash and avoids silently replaying accepted work in either case.
+
+## Host restart behavior
+
+When Harness opens an existing database, it:
+
+1. runs schema migrations;
+2. fails formerly active turns with `HOST_RESTARTED`;
+3. sets `mayHaveSideEffects: true` for those turns;
+4. expires unresolved permissions and input requests;
+5. leaves accepted queued turns paused;
+6. waits to start provider runtimes until the application requests work.
+
+Display the recovered snapshot before deciding what to resume:
+
+```ts
+const session = await harness.sessions.load(sessionId);
+const snapshot = await session.snapshot();
+
+renderRecoveredState(snapshot);
+
+if (await userConfirmsQueuedWork()) {
+  await session.resumeQueue();
+}
+```
+
+Set `resumeQueuesOnStartup: true` only when your application has an explicit policy that makes automatic resumption safe.
+
+## Provider crash behavior
+
+If a provider crashes during an accepted turn, `turn.done()` resolves with a failed result. Harness does not replay the prompt because the provider may already have changed files or external state.
+
+```ts
+const result = await turn.done();
+
+if (result.status === "failed" && result.mayHaveSideEffects) {
+  await showRecoveryReview({
+    code: result.error.code,
+    message: result.error.message,
+  });
+}
+```
+
+<Warning>
+  Never implement retry by blindly sending the old prompt again. Inspect the working tree and
+  provider-owned state before accepting replacement work.
+</Warning>
+
+## Graceful shutdown
+
+Use `await harness.close()` for ordinary application shutdown. Close is idempotent, stops accepting work, terminates owned runtimes, closes subscriptions, and releases the database.

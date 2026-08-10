@@ -10,7 +10,7 @@ import {
   type ProviderAdapterV1,
   type Session,
   UnsupportedCapabilityError,
-} from "@triadlabs/harness";
+} from "@triadlabs/harness-sdk";
 import { describe, expect, it } from "vitest";
 
 export type ProviderContractScenario =

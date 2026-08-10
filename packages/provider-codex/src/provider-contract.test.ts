@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { createHarness } from "@triadlabs/harness";
-import { providerContract } from "@triadlabs/harness-testkit";
+import { createHarness } from "@triadlabs/harness-sdk";
+import { providerContract } from "@triadlabs/harness-sdk/testkit/vitest";
 import { expect, it } from "vitest";
 
 import { createCodexProvider } from "./adapter.js";

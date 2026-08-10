@@ -1,4 +1,4 @@
-import type { ProviderAdapterV1 } from "@triadlabs/harness";
+import type { ProviderAdapterV1 } from "@triadlabs/harness-sdk";
 
 import { fakeProvider, FakeProviderController } from "./fake-provider.js";
 import { providerContract, type ProviderContractScenario } from "./provider-contract.js";

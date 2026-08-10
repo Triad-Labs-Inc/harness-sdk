@@ -1,0 +1,65 @@
+---
+title: "Build a terminal application"
+description: "Run Harness directly in a Node.js TUI process and stream durable agent events."
+icon: "terminal"
+---
+
+A terminal user interface can own Harness, SQLite, and provider runtimes in one Node.js process.
+
+```text
+TUI process
+├── input and rendering
+├── Harness SDK
+├── SQLite connection
+└── provider runtimes
+```
+
+## Start Harness once
+
+```ts
+import { homedir } from "node:os";
+import { join } from "node:path";
+
+import { createHarness } from "@triadlabs/harness-sdk";
+import { createCodexProvider } from "@triadlabs/harness-sdk/codex";
+
+const harness = await createHarness({
+  homeDir: join(homedir(), ".my-agent-app"),
+  providers: { codex: createCodexProvider() },
+});
+```
+
+Use a stable `homeDir` so sessions survive process restarts. Create temporary directories only for smoke tests.
+
+## Keep rendering separate
+
+Route normalized events into your TUI's state model. Do not print native provider messages or parse terminal escape sequences.
+
+```ts
+if (event.type === "message.delta") {
+  model.append(event.data.messageId, event.data.delta);
+  render(model);
+}
+```
+
+## Close on exit
+
+```ts
+try {
+  await runInputLoop();
+} finally {
+  await subscription.close();
+  await harness.close();
+}
+```
+
+`harness.close()` is graceful and idempotent. It closes subscriptions, stops SDK-owned runtimes, flushes storage and logs, and rejects new work.
+
+<Card
+  title="Reference TUI"
+  icon="github"
+  href="https://github.com/Triad-Labs-Inc/harness-sdk/tree/main/examples/tui"
+>
+  See the complete example with session resumption, permissions, questions, history, and
+  interruption.
+</Card>

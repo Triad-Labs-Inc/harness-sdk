@@ -1,0 +1,71 @@
+---
+title: "Deterministic fake provider"
+description: "Test complete Harness flows without an installed agent, network access, credentials, or paid usage."
+icon: "flask-conical"
+---
+
+`@triadlabs/harness-sdk/testkit` exports a scripted provider with no test-runner dependency. Use it for application tests, demos, and local development.
+
+## Test a complete turn
+
+```ts
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { createHarness, createMemoryStore } from "@triadlabs/harness-sdk";
+import { FakeProviderController, fakeProvider } from "@triadlabs/harness-sdk/testkit";
+
+const controller = new FakeProviderController();
+controller.enqueue(
+  controller.script(
+    { type: "text", chunks: ["durable ", "output"] },
+    { type: "tool", name: "read_file", input: { path: "README.md" } },
+    { type: "complete" },
+  ),
+);
+
+const harness = await createHarness({
+  homeDir: await mkdtemp(join(tmpdir(), "harness-test-")),
+  providers: { fake: fakeProvider(controller) },
+  store: createMemoryStore(),
+  textDeltaCoalesceMs: 0,
+});
+
+const session = await harness.sessions.create({
+  provider: "fake",
+  cwd: "/fixture",
+});
+
+const result = await (await session.send({ text: "test" })).done();
+console.log(result); // { status: "completed" }
+
+await harness.close();
+```
+
+## Scripted steps
+
+| Step         | Behavior                                                     |
+| ------------ | ------------------------------------------------------------ |
+| `text`       | Emits message start, ordered chunks, and message completion. |
+| `tool`       | Emits tool start and completion.                             |
+| `permission` | Parks the turn until the application responds.               |
+| `input`      | Emits structured questions and waits for answers.            |
+| `delay`      | Pauses deterministically for the requested duration.         |
+| `diagnostic` | Emits a normalized diagnostic.                               |
+| `fail`       | Produces a provider-declared failed turn.                    |
+| `crash`      | Throws from the provider stream to test crash handling.      |
+| `complete`   | Completes the turn.                                          |
+
+## Inspect what your application sent
+
+The controller records provider-visible operations:
+
+```ts
+expect(controller.starts).toHaveLength(1);
+expect(controller.starts[0]?.text).toBe("test");
+expect(controller.maxActive).toBe(1);
+expect(controller.closed).toBe(1);
+```
+
+You can also change `controller.status` and `controller.capabilities` to exercise unavailable and unsupported-provider interfaces.

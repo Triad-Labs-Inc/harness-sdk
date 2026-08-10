@@ -1,0 +1,54 @@
+---
+title: "Error reference"
+description: "Handle typed immediate errors and distinguish them from accepted turn failures."
+icon: "circle-alert"
+---
+
+Immediate validation, availability, and capability failures reject the API call with a `HarnessError`. Failures after a turn is accepted resolve through `turn.done()` and durable events.
+
+## Base error
+
+```ts
+class HarnessError extends Error {
+  readonly code: string;
+  readonly details?: Readonly<Record<string, unknown>>;
+  toData(): HarnessErrorData;
+}
+```
+
+## Error classes
+
+| Class                            | Code                          | Typical cause                                               |
+| -------------------------------- | ----------------------------- | ----------------------------------------------------------- |
+| `ValidationError`                | `VALIDATION_ERROR`            | Invalid options, registration, request, or state.           |
+| `UnsupportedCapabilityError`     | `UNSUPPORTED_CAPABILITY`      | The provider does not advertise the requested operation.    |
+| `UnsupportedAdapterVersionError` | `UNSUPPORTED_ADAPTER_VERSION` | Core cannot accept the adapter contract version.            |
+| `ProviderUnavailableError`       | `PROVIDER_UNAVAILABLE`        | The provider is missing, unauthenticated, or unavailable.   |
+| `SessionNotFoundError`           | `SESSION_NOT_FOUND`           | No stored session has the requested ID.                     |
+| `SessionDeletedError`            | `SESSION_DELETED`             | An operation or subscription targets deleted session state. |
+| `InteractionNotFoundError`       | `INTERACTION_NOT_FOUND`       | A response targets no pending interaction.                  |
+| `SlowConsumerError`              | `SLOW_CONSUMER`               | A subscriber exceeded its bounded buffer.                   |
+| `HarnessClosedError`             | `HARNESS_CLOSED`              | New work was attempted after shutdown began.                |
+| `StorageError`                   | `STORE_WRITE_FAILED`          | A storage operation failed.                                 |
+
+## Handle by type or code
+
+```ts
+import { ProviderUnavailableError, UnsupportedCapabilityError } from "@triadlabs/harness-sdk";
+
+try {
+  await session.steer({ text: "Use a smaller change." });
+} catch (error) {
+  if (error instanceof UnsupportedCapabilityError) {
+    hideSteeringControls();
+  } else if (error instanceof ProviderUnavailableError) {
+    showProviderStatus(error.details);
+  } else {
+    throw error;
+  }
+}
+```
+
+## Durable failure codes
+
+Provider and host failures appear inside failed `TurnResult` values. Recovery after a host restart uses `HOST_RESTARTED`; provider stream crashes use `PROVIDER_CRASHED`.

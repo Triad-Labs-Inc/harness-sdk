@@ -1,5 +1,20 @@
 # Migration guide
 
+## Public package consolidation
+
+The initial four-package registry layout is replaced by one package with subpath exports:
+
+| Previous import              | Current import                   |
+| ---------------------------- | -------------------------------- |
+| `@triadlabs/harness`         | `@triadlabs/harness-sdk`         |
+| `@triadlabs/harness-codex`   | `@triadlabs/harness-sdk/codex`   |
+| `@triadlabs/harness-claude`  | `@triadlabs/harness-sdk/claude`  |
+| `@triadlabs/harness-testkit` | `@triadlabs/harness-sdk/testkit` |
+
+Install only `@triadlabs/harness-sdk`; the subpaths are exports of that package, not separately installable npm packages. The previous package names remain as deprecated historical registry artifacts with migration notices pointing to the consolidated package.
+
+`FakeProviderController` and `fakeProvider()` move to `/testkit`. `providerContract()` and `storageContract()` move to `/testkit/vitest`; install `vitest@4.1.10` when using those contract suites.
+
 ## Pre-1.0 compatibility
 
 The packages are versioned together. Until 1.0, review release notes for public type changes and pin exact package versions in production applications. `ProviderAdapterV1.apiVersion` changes only when the structural adapter contract becomes incompatible.

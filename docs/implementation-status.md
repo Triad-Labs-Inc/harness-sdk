@@ -322,3 +322,138 @@ Published versions:
 - `@triadlabs/harness-claude@0.1.0`
 
 All four packages report public access. npm assigned both `next` and `latest` to `0.1.0` during the initial publications. npm's publish-time malware scan delayed public reads for several minutes after the publish API accepted the packages; all four registry documents subsequently returned HTTP 200. A clean install from the public registry was started after propagation but intentionally interrupted at the user's request before it completed, so the verified clean-install evidence for this commit remains the pre-publication tarball gate recorded above.
+
+## Single-package export consolidation — 2026-08-10
+
+Status: complete and published
+
+The public distribution now follows Email SDK's single-package export-map model. Inspection of `opencoredev/email-sdk` confirmed that `@opencoredev/email-sdk` publishes one tarball whose provider integrations are explicit `exports` entries such as `./resend`; those subpaths are not independent npm packages.
+
+Harness now has one publishable npm identity and five entrypoints:
+
+- `@triadlabs/harness-sdk`
+- `@triadlabs/harness-sdk/codex`
+- `@triadlabs/harness-sdk/claude`
+- `@triadlabs/harness-sdk/testkit`
+- `@triadlabs/harness-sdk/testkit/vitest`
+
+The Codex, Claude, and testkit source trees remain separate private workspaces. A release build compiles them independently and assembles their output under the public package's `dist/codex`, `dist/claude`, and `dist/testkit` directories. The root entrypoint remains provider-independent and does not evaluate provider modules. The lightweight `/testkit` entrypoint exports only the deterministic fake and does not load a test runner; the contract suites moved to `/testkit/vitest`, with Vitest declared as an optional peer dependency. A normal production installation therefore installs the Claude Agent SDK and `cross-spawn`, but not Vitest.
+
+`@triadlabs/harness-sdk@0.1.0` is published publicly with the `latest` tag. The previous `@triadlabs/harness`, `@triadlabs/harness-codex`, `@triadlabs/harness-claude`, and `@triadlabs/harness-testkit` `0.1.0` releases remain available as historical artifacts and are deprecated with migration notices pointing to the corresponding entrypoint in `@triadlabs/harness-sdk`.
+
+Commands run:
+
+```text
+npm view @triadlabs/harness-sdk name version --json
+npm install
+npm run clean
+npm run build:package
+npm run build
+npm run pack:check
+npm test
+npm run format
+npm run clean
+npm run build
+npm run typecheck
+npm run lint
+npm run format:check
+npm test
+npm run test:integration
+npm run pack:check
+npm run smoke -w @triadlabs/harness-example-tui
+npm run smoke -w @triadlabs/harness-example-electron
+npm pack ./packages/core --dry-run --ignore-scripts --json
+npm publish --dry-run --json -w @triadlabs/harness-sdk --ignore-scripts
+npm publish -w @triadlabs/harness-sdk --access public
+npm access get status @triadlabs/harness-sdk
+npm view @triadlabs/harness-sdk@0.1.0 --json
+
+# In a new temporary project, using only the public registry:
+npm install --ignore-scripts @triadlabs/harness-sdk@0.1.0
+node --input-type=module -e "await import('@triadlabs/harness-sdk'); await import('@triadlabs/harness-sdk/codex'); await import('@triadlabs/harness-sdk/claude'); await import('@triadlabs/harness-sdk/testkit')"
+npm install --ignore-scripts vitest@4.1.10
+node --input-type=module -e "await import('@triadlabs/harness-sdk/testkit/vitest')"
+
+npm deprecate @triadlabs/harness@0.1.0 "Moved to @triadlabs/harness-sdk. Install @triadlabs/harness-sdk."
+npm deprecate @triadlabs/harness-codex@0.1.0 "Moved to @triadlabs/harness-sdk/codex. Install @triadlabs/harness-sdk and import from @triadlabs/harness-sdk/codex."
+npm deprecate @triadlabs/harness-claude@0.1.0 "Moved to @triadlabs/harness-sdk/claude. Install @triadlabs/harness-sdk and import from @triadlabs/harness-sdk/claude."
+npm deprecate @triadlabs/harness-testkit@0.1.0 "Moved to @triadlabs/harness-sdk/testkit. Vitest contracts are at @triadlabs/harness-sdk/testkit/vitest."
+npm view <each legacy package>@0.1.0 deprecated --json
+
+cd ../harness-electron-poc
+npm install
+npm run format
+npm run typecheck
+npm test
+npm run format:check
+npm audit --audit-level=high
+npm run smoke
+```
+
+Results:
+
+- npm initially returned `E404` for `@triadlabs/harness-sdk`, confirming that the name was free before release.
+- Published `@triadlabs/harness-sdk@0.1.0` publicly; npm reports `latest` as `0.1.0`, public access, 73 files, and a 383,112-byte unpacked size.
+- A clean temporary project installed `@triadlabs/harness-sdk@0.1.0` from the public registry with 0 audit vulnerabilities. The root, `/codex`, `/claude`, and `/testkit` entrypoints imported successfully while `node_modules/vitest` was absent. After explicitly installing `vitest@4.1.10`, `/testkit/vitest` imported successfully.
+- Deprecated all four legacy `0.1.0` packages and verified their registry notices point to the matching root, `/codex`, `/claude`, or `/testkit` entrypoint.
+- Clean SDK build, type check, lint, and formatting checks: passed.
+- Deterministic SDK suite: 79 tests passed.
+- Default real-provider suite: 2 opt-in tests skipped as designed.
+- Single-tarball clean install, runtime import, and declaration smoke tests: passed for all five entrypoints. The smoke first proves that Vitest is absent and `/testkit` works, then installs Vitest explicitly and verifies `/testkit/vitest`.
+- TUI and Electron reference smokes: passed.
+- Standalone Electron consumer: type check, 2 tests, formatting, audit, production build, and Electron smoke passed; 0 vulnerabilities.
+- Dry-run package: 69,965 bytes compressed, 383,112 bytes unpacked, 73 entries, and no `.tsbuildinfo` files.
+- The first attempt used `npm pack packages/core`, which npm interpreted as a GitHub shorthand and rejected. The corrected local path `npm pack ./packages/core` passed.
+
+Intentional deviation:
+
+- The previous design exposed four independently published packages. The user-directed consolidation replaces that registry layout with one package. Internal source boundaries and the root entrypoint's provider independence are preserved, but a root-only installation now installs dependencies used by the Codex and Claude provider subpaths. Test-runner dependencies remain opt-in through `/testkit/vitest`.
+
+## Mintlify documentation site — 2026-08-10
+
+Status: complete locally; production project connected and awaiting a documentation commit
+
+The existing site at `https://harness-sdk.mintlify.app` was inspected before replacing its source. Its information architecture was useful, but its install and import examples still referenced the four deprecated package names. The repository now contains a code-based Mintlify project under `docs/` with a current `docs.json`, 22 user-facing MDX pages, light and dark brand assets, task-based navigation, and 22 permanent redirects from the established live URLs.
+
+The site documents installation, a complete first turn, Codex and Claude setup, sessions and queues, gap-free streaming, permissions and questions, TUI and Electron integration, crash recovery, security boundaries, the deterministic fake, optional Vitest contracts, storage, errors, events, adapter authoring, and package migration. Every package example uses `@triadlabs/harness-sdk` and its public subpaths.
+
+Commands run:
+
+```text
+npm run format
+npm run docs:validate
+npm run docs:a11y
+npm run docs:dev -- --no-open --port 3333
+```
+
+Results:
+
+- Mintlify strict build validation: passed.
+- Mintlify accessibility audit: passed. The primary light-theme accent reaches a 7.19:1 contrast ratio; all configured colors meet the audit thresholds, and all checked media has alternative text.
+- Local rendered inspection: passed for the landing page, navigation, `/quickstart` redirect, current quickstart code, Electron guide, and Harness API reference.
+- The existing Mintlify project is connected to `Triad-Labs-Inc/harness-sdk`, branch `main`, with monorepo documentation path `/docs`. Saving the Git settings queued a deployment and the dashboard verified the new repository link. Production remains on the older content until the local documentation changes are committed and pushed.
+
+Tooling note:
+
+- Mint CLI 4.2.788 rejects Node.js 25.2.1. The repository scripts provision Node.js 22.23.2 and Mint CLI 4.2.788 through `npx`, so preview and validation work without changing the application's active Node.js version.
+
+## Repository cleanup — 2026-08-10
+
+Removed `GOAL_PROMPT.md` and its README link. The file was the completed implementation prompt, contained a machine-specific path, and had no runtime, test, packaging, or documentation role. The provider probes, sanitized fixtures, internal design documents, and package-level READMEs remain because they still support reproducibility and contributor work.
+
+Moved Vitest from the private testkit workspace's runtime dependencies to its development dependencies. The published package continues to expose the contracts through `/testkit/vitest` with an optional Vitest peer, while `/testkit` remains test-runner-free. Updated stale probe fixture paths, Claude login wording, and the migration note about the already deprecated package names.
+
+Commands run:
+
+```text
+git diff --check
+npm run format:check
+npm run lint
+npm test
+npm run typecheck
+npm run pack:check
+npm run build:examples
+npm run docs:validate
+```
+
+Results: 79 tests passed. Type checks, package assembly and clean-install smoke tests, TUI and Electron builds, formatting, linting, and Mintlify validation passed.

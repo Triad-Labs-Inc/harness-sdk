@@ -8,18 +8,27 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "tsc -b && node examples/electron/scripts/copy-assets.mjs",
-    "clean": "tsc -b --clean",
+    "build": "npm run build:package && npm run build:examples",
+    "build:package": "tsc -b packages/core packages/testkit packages/provider-codex packages/provider-claude && node scripts/assemble-package.mjs",
+    "build:examples": "tsc -b examples/tui examples/electron && node examples/electron/scripts/copy-assets.mjs",
+    "clean": "tsc -b --clean && node scripts/assemble-package.mjs --clean",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
+    "pretest": "npm run build:package",
     "test": "vitest run",
     "test:watch": "vitest",
+    "pretest:integration": "npm run build:package",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "pretest:integration:codex": "npm run build:package",
     "test:integration:codex": "node scripts/run-live-integration.mjs codex",
+    "pretest:integration:claude": "npm run build:package",
     "test:integration:claude": "node scripts/run-live-integration.mjs claude",
-    "typecheck": "tsc -b --pretty false",
-    "pack:check": "node scripts/pack-smoke.mjs"
+    "typecheck": "npm run build:package && tsc -b examples/tui examples/electron --pretty false",
+    "pack:check": "node scripts/pack-smoke.mjs",
+    "docs:dev": "cd docs && npx --yes --package=node@22.23.2 --package=mint@4.2.788 -- mint dev",
+    "docs:validate": "cd docs && npx --yes --package=node@22.23.2 --package=mint@4.2.788 -- mint validate",
+    "docs:a11y": "cd docs && npx --yes --package=node@22.23.2 --package=mint@4.2.788 -- mint a11y"
   },
   "engines": {
     "node": ">=22.13"

@@ -1,0 +1,91 @@
+---
+title: "Streaming and history"
+description: "Build gap-free state with durable snapshots, replay, and bounded subscriptions."
+icon: "radio-tower"
+---
+
+Harness assigns every event a durable, store-wide sequence and commits it before delivery. Use that sequence as the cursor between stored state and live updates.
+
+## Subscribe without a gap
+
+<Steps>
+  <Step title="Read a snapshot">
+
+```ts
+const snapshot = await session.snapshot();
+renderSnapshot(snapshot);
+```
+
+  </Step>
+  <Step title="Subscribe after its sequence">
+
+```ts
+const subscription = await session.subscribe(
+  { afterSequence: snapshot.sequence },
+  {
+    onEvent: (event) => renderEvent(event),
+    onError: (error) => handleSubscriptionError(error),
+  },
+);
+```
+
+  </Step>
+</Steps>
+
+`subscribe()` resolves only after the replay-to-live boundary is installed. An event committed while the subscription is being created is replayed or delivered live, never lost between the two.
+
+## Render normalized events
+
+```ts
+import type { HarnessEvent } from "@triadlabs/harness-sdk";
+
+function renderEvent(event: HarnessEvent): void {
+  switch (event.type) {
+    case "message.delta":
+      appendText(event.data.messageId, event.data.delta);
+      break;
+    case "tool.started":
+      showTool(event.data.toolId, event.data.name, event.data.input);
+      break;
+    case "turn.failed":
+      showFailure(event.data.error);
+      break;
+  }
+}
+```
+
+Tiny text deltas may be coalesced for up to 25 milliseconds. Terminal events, interactions, tool state, diagnostics, and failures are not delayed for coalescing.
+
+## Read paginated history
+
+```ts
+let afterSequence = 0;
+
+while (true) {
+  const page = await session.history({ afterSequence, limit: 100 });
+  for (const event of page.events) processEvent(event);
+  if (!page.hasMore || page.nextSequence === undefined) break;
+  afterSequence = page.nextSequence;
+}
+```
+
+History is ordered by durable sequence. Do not load an unbounded conversation into memory when a paginated read is sufficient.
+
+## Recover a slow subscriber
+
+Every subscriber has bounded event and byte buffers. If an observer cannot keep up, Harness closes it with `SlowConsumerError`:
+
+```ts
+import { SlowConsumerError } from "@triadlabs/harness-sdk";
+
+async function reconnect(error: Error): Promise<void> {
+  if (!(error instanceof SlowConsumerError)) throw error;
+
+  await session.subscribe(
+    { afterSequence: error.lastSequence },
+    { onEvent: renderEvent, onError: reconnect },
+  );
+}
+```
+
+Keep `onEvent` short. Move expensive rendering or analytics work to an application-owned queue so one observer does not block delivery.

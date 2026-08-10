@@ -1,0 +1,59 @@
+---
+title: "Core concepts"
+description: "Understand the durable objects and lifecycle boundaries in Harness SDK."
+icon: "boxes"
+---
+
+Harness normalizes provider-specific behavior into a small set of application-facing concepts.
+
+```text
+Harness
+├── providers
+└── sessions
+    ├── turns
+    ├── events
+    ├── messages
+    └── interactions
+```
+
+## Harness
+
+The top-level `Harness` instance owns storage, provider registrations, active runtimes, subscriptions, and shutdown. Create one for an application-owned `homeDir` and close it during application shutdown.
+
+## Provider
+
+A provider adapter translates a local coding agent into Harness operations and normalized events. The first release includes Codex and Claude adapters. Adapters are registered explicitly; Harness does not discover or install them.
+
+## Session
+
+A session is one continuing conversation with one provider in one fixed working directory. A coder and reviewer are separate sessions, even when both use the same repository.
+
+Multiple sessions can run concurrently. Each active session has an isolated provider runtime.
+
+## Turn
+
+A turn is one accepted unit of work. Only one turn runs at a time in a session. Calling `send()` during active work queues the new turn; it does not interrupt or alter the current turn.
+
+Use explicit operations when you need to change active work:
+
+- `steer()` adds direction when the provider supports steering.
+- `interrupt()` requests that the active turn stop.
+
+## Event
+
+An event is an immutable fact with a durable, store-wide sequence. Core commits an event and updates its projections before any subscriber receives it.
+
+The sequence is the resume cursor for history and subscriptions. It is not a provider-native ID.
+
+## Projection
+
+A projection is current readable state derived from committed events. `session.snapshot()` returns session state, turns, messages, interactions, and the sequence through which that data is current.
+
+## Interaction
+
+An interaction is provider work that needs an application response. Harness keeps tool permissions and agent questions separate because they require different interfaces and response shapes.
+
+<Warning>
+  A provider crash never causes Harness to replay an accepted turn automatically. The provider may
+  already have changed files or external state.
+</Warning>

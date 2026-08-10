@@ -1,0 +1,89 @@
+---
+title: "Sessions and turns"
+description: "Create persistent conversations, queue work, and control active turns explicitly."
+icon: "messages-square"
+---
+
+A session is one continuing provider conversation in one fixed working directory. A turn is one accepted unit of work inside that session.
+
+## Create and load sessions
+
+```ts
+const session = await harness.sessions.create({
+  provider: "codex",
+  cwd: "/path/to/project",
+});
+
+const sameSession = await harness.sessions.load(session.id);
+const visibleSessions = await harness.sessions.list();
+const allSessions = await harness.sessions.list({ includeArchived: true });
+```
+
+The provider and working directory are immutable. Harness assigns the public session ID and keeps provider-native IDs internal.
+
+## Send and queue turns
+
+```ts
+const first = await session.send({ text: "Inspect the failing tests." });
+const second = await session.send({ text: "Implement the smallest safe fix." });
+
+const [firstResult, secondResult] = await Promise.all([first.done(), second.done()]);
+```
+
+`send()` durably accepts the turn and returns. If another turn is active, the new turn stays queued. Each session runs exactly one active turn; different sessions may run concurrently.
+
+## Override supported settings per turn
+
+```ts
+const turn = await session.send({
+  text: "Review this change for concurrency bugs.",
+  model: "provider-model-id",
+  reasoning: "high",
+  permissionMode: "supervised",
+});
+```
+
+Check provider capabilities before exposing model or reasoning controls. Unsupported overrides fail before Harness accepts the turn.
+
+## Steer or interrupt explicitly
+
+```ts
+await session.steer({
+  text: "Keep the public API unchanged.",
+});
+
+await session.interrupt();
+```
+
+Calling `send()` never steers or interrupts active work. Claude does not advertise steering in adapter version 1.
+
+## Handle terminal results
+
+```ts
+const result = await turn.done();
+
+switch (result.status) {
+  case "completed":
+    break;
+  case "interrupted":
+    console.log(result.reason);
+    break;
+  case "failed":
+    console.error(result.error.code, result.error.message);
+    if (result.mayHaveSideEffects) {
+      await inspectWorkingTreeBeforeRetrying();
+    }
+    break;
+}
+```
+
+Once Harness accepts a turn, later failures resolve through `turn.done()` and durable terminal events. Harness does not automatically replay failed provider work.
+
+## Archive or delete
+
+```ts
+await session.archive(); // preserves records and events
+await session.delete(); // removes Harness-owned session records
+```
+
+Deletion does not remove repository files, provider-owned history, provider configuration, or unrelated operational logs.

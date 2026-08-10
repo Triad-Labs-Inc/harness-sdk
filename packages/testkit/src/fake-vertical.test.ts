@@ -2,7 +2,7 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createHarness, createMemoryStore, type HarnessEvent } from "@triadlabs/harness";
+import { createHarness, createMemoryStore, type HarnessEvent } from "@triadlabs/harness-sdk";
 import { describe, expect, it } from "vitest";
 
 import { fakeProvider, FakeProviderController } from "./fake-provider.js";

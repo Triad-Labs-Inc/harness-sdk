@@ -1,9 +1,9 @@
-# @triadlabs/harness-claude
+# @triadlabs/harness-sdk/claude
 
 Claude Agent SDK adapter for Harness SDK.
 
 ```ts
-import { createClaudeProvider } from "@triadlabs/harness-claude";
+import { createClaudeProvider } from "@triadlabs/harness-sdk/claude";
 
 const provider = createClaudeProvider();
 ```

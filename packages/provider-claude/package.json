@@ -1,6 +1,7 @@
 {
-  "name": "@triadlabs/harness-claude",
+  "name": "@triadlabs/harness-sdk-internal-claude",
   "version": "0.1.0",
+  "private": true,
   "description": "Claude Agent SDK provider adapter for Triad Labs Harness SDK.",
   "type": "module",
   "license": "MIT",
@@ -37,15 +38,11 @@
   "engines": {
     "node": ">=22.13"
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "0.3.226",
-    "@triadlabs/harness": "0.1.0"
+    "@triadlabs/harness-sdk": "0.1.0"
   },
   "devDependencies": {
-    "@triadlabs/harness-testkit": "0.1.0",
     "vitest": "4.1.10"
   },
   "scripts": {

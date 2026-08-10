@@ -26,11 +26,11 @@ describe("package boundaries", () => {
       )
     ).join("\n");
     expect(source).not.toContain("@anthropic-ai");
-    expect(source).not.toContain("@triadlabs/harness-codex");
-    expect(source).not.toContain("@triadlabs/harness-claude");
+    expect(source).not.toContain("@triadlabs/harness-sdk/codex");
+    expect(source).not.toContain("@triadlabs/harness-sdk/claude");
   });
 
-  it("uses only package-root public imports in both examples", async () => {
+  it("uses only public package imports in both examples", async () => {
     const files = [
       "examples/tui/src/index.ts",
       "examples/electron/src/bridge.ts",
@@ -41,6 +41,7 @@ describe("package boundaries", () => {
     ];
     for (const file of files) {
       const source = await readFile(resolve(root, file), "utf8");
+      expect(source).not.toContain("harness-sdk-internal");
       expect(source).not.toMatch(/@harness-sdk\/(?:core|codex|claude|testkit)\//);
       expect(source).not.toMatch(/packages\/(?:core|provider-codex|provider-claude)\/src/);
     }

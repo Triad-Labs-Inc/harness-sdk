@@ -1,0 +1,36 @@
+---
+title: "Package consolidation"
+description: "Migrate from the original four-package layout to @triadlabs/harness-sdk subpath exports."
+icon: "package-check"
+---
+
+Harness SDK now publishes one npm package with explicit subpath exports.
+
+## Update dependencies
+
+```bash
+npm uninstall \
+  @triadlabs/harness \
+  @triadlabs/harness-codex \
+  @triadlabs/harness-claude \
+  @triadlabs/harness-testkit
+
+npm install @triadlabs/harness-sdk
+```
+
+## Update imports
+
+| Previous import              | Current import                   |
+| ---------------------------- | -------------------------------- |
+| `@triadlabs/harness`         | `@triadlabs/harness-sdk`         |
+| `@triadlabs/harness-codex`   | `@triadlabs/harness-sdk/codex`   |
+| `@triadlabs/harness-claude`  | `@triadlabs/harness-sdk/claude`  |
+| `@triadlabs/harness-testkit` | `@triadlabs/harness-sdk/testkit` |
+
+The deterministic fake remains at `/testkit`. Vitest-specific contracts moved to `/testkit/vitest`:
+
+```ts
+import { providerContract, storageContract } from "@triadlabs/harness-sdk/testkit/vitest";
+```
+
+Install `vitest@4.1.10` when you use the contract suites. Production consumers do not receive Vitest through the lightweight testkit entrypoint.
