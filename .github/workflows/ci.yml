@@ -25,7 +25,7 @@ jobs:
       - run: npm run format:check
       - run: npm test
       - run: npm run pack:check
-      - run: npm run smoke -w @harness-sdk/example-tui
+      - run: npm run smoke -w @triadlabs/harness-example-tui
       - if: runner.os == 'Linux'
         name: Configure Electron SUID sandbox
         run: |
@@ -33,6 +33,6 @@ jobs:
           sudo chown root:root node_modules/electron/dist/chrome-sandbox
           sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
       - if: runner.os == 'Linux'
-        run: xvfb-run -a npm run smoke -w @harness-sdk/example-electron
+        run: xvfb-run -a npm run smoke -w @triadlabs/harness-example-electron
       - if: runner.os != 'Linux'
-        run: npm run smoke -w @harness-sdk/example-electron
+        run: npm run smoke -w @triadlabs/harness-example-electron

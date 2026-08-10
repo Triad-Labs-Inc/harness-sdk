@@ -15,7 +15,7 @@ import {
   type HarnessEventDraft,
   type HarnessEvent,
   type ProviderAdapterV1,
-} from "@harness-sdk/core";
+} from "@triadlabs/harness";
 import { describe, expect, it } from "vitest";
 
 import { fakeProvider, FakeProviderController } from "./fake-provider.js";

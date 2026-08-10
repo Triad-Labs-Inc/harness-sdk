@@ -11,7 +11,7 @@ import {
   type SessionRecord,
   type TurnId,
   type TurnRecord,
-} from "@harness-sdk/core";
+} from "@triadlabs/harness";
 import { describe, expect, it } from "vitest";
 
 import { fakeProvider, FakeProviderController } from "./fake-provider.js";

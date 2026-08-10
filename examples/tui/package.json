@@ -1,5 +1,5 @@
 {
-  "name": "@harness-sdk/example-tui",
+  "name": "@triadlabs/harness-example-tui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,8 +9,8 @@
     "smoke": "node dist/index.js --smoke"
   },
   "dependencies": {
-    "@harness-sdk/claude": "0.1.0",
-    "@harness-sdk/codex": "0.1.0",
-    "@harness-sdk/core": "0.1.0"
+    "@triadlabs/harness-claude": "0.1.0",
+    "@triadlabs/harness-codex": "0.1.0",
+    "@triadlabs/harness": "0.1.0"
   }
 }

@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 
-import type { HarnessEvent, TurnId, TurnResult } from "@harness-sdk/core";
+import type { HarnessEvent, TurnId, TurnResult } from "@triadlabs/harness";
 
 import type { HarnessRendererApi } from "./bridge.js";
 

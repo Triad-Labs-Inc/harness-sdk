@@ -26,8 +26,8 @@ describe("package boundaries", () => {
       )
     ).join("\n");
     expect(source).not.toContain("@anthropic-ai");
-    expect(source).not.toContain("@harness-sdk/codex");
-    expect(source).not.toContain("@harness-sdk/claude");
+    expect(source).not.toContain("@triadlabs/harness-codex");
+    expect(source).not.toContain("@triadlabs/harness-claude");
   });
 
   it("uses only package-root public imports in both examples", async () => {

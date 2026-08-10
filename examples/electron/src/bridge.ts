@@ -9,7 +9,7 @@ import type {
   SessionSummary,
   TurnId,
   TurnResult,
-} from "@harness-sdk/core";
+} from "@triadlabs/harness";
 
 export interface BootstrapData {
   readonly providers: Readonly<Record<string, ProviderStatus>>;

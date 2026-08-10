@@ -1,9 +1,9 @@
 # Provider adapter authoring guide
 
-Implement `ProviderAdapterV1` from `@harness-sdk/core` and register it explicitly under the same ID.
+Implement `ProviderAdapterV1` from `@triadlabs/harness` and register it explicitly under the same ID.
 
 ```ts
-import type { ProviderAdapterV1 } from "@harness-sdk/core";
+import type { ProviderAdapterV1 } from "@triadlabs/harness";
 
 export const adapter: ProviderAdapterV1 = {
   apiVersion: 1,
@@ -42,4 +42,4 @@ Rules:
 - Treat unknown additive messages as ignorable or diagnostic. Malformed boundary messages may fail the turn when continuing would be unsafe.
 - `close()` must be idempotent and terminate only processes the adapter created.
 
-Run `providerContract()` from `@harness-sdk/testkit` with deterministic native fixtures. Real integration tests must be separately opt-in.
+Run `providerContract()` from `@triadlabs/harness-testkit` with deterministic native fixtures. Real integration tests must be separately opt-in.

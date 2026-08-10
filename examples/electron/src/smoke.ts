@@ -2,7 +2,7 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createHarness } from "@harness-sdk/core";
+import { createHarness } from "@triadlabs/harness";
 import { app } from "electron";
 
 const homeDir = await mkdtemp(join(tmpdir(), "harness-electron-smoke-"));

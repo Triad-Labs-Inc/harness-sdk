@@ -1,8 +1,26 @@
 {
-  "name": "@harness-sdk/testkit",
+  "name": "@triadlabs/harness-testkit",
   "version": "0.1.0",
+  "description": "Deterministic fake provider and shared contract suites for Triad Labs Harness SDK.",
   "type": "module",
   "license": "MIT",
+  "author": "Triad Labs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ferran9908/harness-sdk.git",
+    "directory": "packages/testkit"
+  },
+  "homepage": "https://github.com/ferran9908/harness-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/ferran9908/harness-sdk/issues"
+  },
+  "keywords": [
+    "agent",
+    "contract-testing",
+    "fake-provider",
+    "harness",
+    "testkit"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -19,11 +37,15 @@
   "engines": {
     "node": ">=22.13"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
-    "@harness-sdk/core": "0.1.0",
+    "@triadlabs/harness": "0.1.0",
     "vitest": "4.1.10"
   },
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b",
+    "prepack": "npm run build"
   }
 }

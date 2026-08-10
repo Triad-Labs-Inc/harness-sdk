@@ -18,17 +18,17 @@ The SDK is a local developer tool. It does not provide a hosted service, user ac
 
 - Node.js 22.13 or newer.
 - An application-owned `homeDir`.
-- Codex installed and authenticated for `@harness-sdk/codex`.
-- Claude Code authenticated with `claude auth login`, or Claude API credentials available to the process, for `@harness-sdk/claude`.
+- Codex installed and authenticated for `@triadlabs/harness-codex`.
+- Claude Code authenticated with `claude auth login`, or Claude API credentials available to the process, for `@triadlabs/harness-claude`.
 
 Real-provider tests are opt-in. The default build and test suite needs no provider installation, network, credentials, or paid usage.
 
 ## Usage
 
 ```ts
-import { createHarness } from "@harness-sdk/core";
-import { createCodexProvider } from "@harness-sdk/codex";
-import { createClaudeProvider } from "@harness-sdk/claude";
+import { createHarness } from "@triadlabs/harness";
+import { createCodexProvider } from "@triadlabs/harness-codex";
+import { createClaudeProvider } from "@triadlabs/harness-claude";
 
 const harness = await createHarness({
   homeDir: "/path/to/app-data/harness",

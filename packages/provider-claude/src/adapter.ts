@@ -22,7 +22,7 @@ import type {
   ProviderRuntime,
   ProviderStatus,
   ProviderTurnRequest,
-} from "@harness-sdk/core";
+} from "@triadlabs/harness";
 
 type Resolvable<T> = T | (() => T | Promise<T>);
 type SettingSource = "user" | "project" | "local";

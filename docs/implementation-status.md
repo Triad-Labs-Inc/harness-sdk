@@ -247,3 +247,78 @@ Gate audit:
 Intentional deviations:
 
 - The official Claude adapter accepts bring-your-own local subscription authentication instead of enforcing API-key-only distribution. This is an explicit product decision recorded in `docs/design-decisions.md` and `docs/third-party-notices.md`.
+
+## Registry identity preparation — 2026-08-10
+
+Status: complete and published
+
+The free public npm organizations `@triadlabs` and `@triad-labs` were created under `ferran-tl` to reserve both brand spellings. Registry membership checks report `ferran-tl` as owner of each organization. `@triadlabs` is the primary package scope; `@triad-labs` is reserved defensively and has no planned packages.
+
+The publishable package identities changed before the first registry release:
+
+- `@harness-sdk/core` → `@triadlabs/harness`
+- `@harness-sdk/codex` → `@triadlabs/harness-codex`
+- `@harness-sdk/claude` → `@triadlabs/harness-claude`
+- `@harness-sdk/testkit` → `@triadlabs/harness-testkit`
+
+The private example workspaces now use `@triadlabs/harness-example-tui` and `@triadlabs/harness-example-electron`. Earlier sections retain the old workspace names because they are historical records of commands run before the rename.
+
+Package manifests now declare public access, descriptions, repository metadata, keywords, and `prepack` builds. TypeScript incremental state moved outside `dist`; dry-run tarballs contain no `.tsbuildinfo` files. The standalone Electron proof of concept at `../harness-electron-poc` also consumes only the renamed public package identities through local file dependencies.
+
+Commands run after the rename:
+
+```text
+npm org ls triadlabs --json
+npm org ls triad-labs --json
+npm install
+npm run format
+npm run clean
+npm run build
+npm run typecheck
+npm run lint
+npm run format:check
+npm test
+npm run test:integration
+npm run pack:check
+npm run smoke -w @triadlabs/harness-example-tui
+npm run smoke -w @triadlabs/harness-example-electron
+npm publish --dry-run --json -w @triadlabs/harness
+npm pack <each publishable package> --dry-run --ignore-scripts --json
+
+cd ../harness-electron-poc
+npm install
+npm run typecheck
+npm test
+npm run format:check
+npm audit --audit-level=high
+npm run smoke
+```
+
+Results:
+
+- Both npm organizations: owned by `ferran-tl`.
+- Deterministic SDK suite: 79 tests passed.
+- Default real-provider suite: 2 opt-in tests skipped as designed.
+- Lint, formatting, build, and type checks: passed.
+- Tarball clean install, runtime, and shipped declaration checks: passed.
+- TUI and Electron reference smoke tests: passed under the renamed workspaces.
+- Standalone Electron consumer: 2 tests, production build, audit, and Electron runtime smoke passed; 0 vulnerabilities.
+- Dry-run package sizes are 35.9 kB core, 14.7 kB Codex, 12.4 kB Claude, and 13.1 kB testkit; none contains build-cache state.
+
+The first public registry release was then published interactively with npm-enforced WebAuthn/2FA:
+
+```text
+npm publish -w @triadlabs/harness --tag next --access public
+npm publish -w @triadlabs/harness-testkit -w @triadlabs/harness-codex -w @triadlabs/harness-claude --tag next --access public
+npm access get status <each package> --json
+npm dist-tag ls <each package>
+```
+
+Published versions:
+
+- `@triadlabs/harness@0.1.0`
+- `@triadlabs/harness-testkit@0.1.0`
+- `@triadlabs/harness-codex@0.1.0`
+- `@triadlabs/harness-claude@0.1.0`
+
+All four packages report public access. npm assigned both `next` and `latest` to `0.1.0` during the initial publications. npm's publish-time malware scan delayed public reads for several minutes after the publish API accepted the packages; all four registry documents subsequently returned HTTP 200. A clean install from the public registry was started after propagation but intentionally interrupted at the user's request before it completed, so the verified clean-install evidence for this commit remains the pre-publication tarball gate recorded above.

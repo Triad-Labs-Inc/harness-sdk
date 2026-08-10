@@ -1,4 +1,4 @@
-import type { HarnessEvent, SessionId, SessionSnapshot } from "@harness-sdk/core";
+import type { HarnessEvent, SessionId, SessionSnapshot } from "@triadlabs/harness";
 
 import type {} from "./bridge.js";
 

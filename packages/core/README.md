@@ -1,9 +1,9 @@
-# @harness-sdk/core
+# @triadlabs/harness
 
 Provider-independent orchestration, durable normalized events, SQLite and memory stores, recovery, subscriptions, permissions, and questions for Harness SDK.
 
 ```ts
-import { createHarness } from "@harness-sdk/core";
+import { createHarness } from "@triadlabs/harness";
 
 const harness = await createHarness({ homeDir: "/app/data/harness", providers: {} });
 await harness.close();

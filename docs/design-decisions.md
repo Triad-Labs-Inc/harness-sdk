@@ -8,6 +8,7 @@ This document records decisions already made during the initial design. Contribu
 - The first supported application types are Node.js TUIs and Electron applications.
 - Electron uses Harness in the main process. The renderer receives a narrow IPC bridge.
 - Core, Codex, Claude, and test utilities are separate packages.
+- The first public npm identities are `@triadlabs/harness`, `@triadlabs/harness-codex`, `@triadlabs/harness-claude`, and `@triadlabs/harness-testkit`; `@triad-labs` is reserved defensively but is not a publication target.
 - Provider adapters use a public `ProviderAdapterV1` contract.
 - Adapters are registered explicitly. There is no automatic plugin discovery.
 

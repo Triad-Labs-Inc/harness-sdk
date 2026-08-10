@@ -10,7 +10,7 @@ import type {
   ProviderRuntime,
   ProviderStatus,
   ProviderTurnRequest,
-} from "@harness-sdk/core";
+} from "@triadlabs/harness";
 
 export type FakeProviderStep =
   | { type: "text"; chunks: readonly string[]; messageId?: string }

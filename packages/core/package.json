@@ -1,8 +1,27 @@
 {
-  "name": "@harness-sdk/core",
+  "name": "@triadlabs/harness",
   "version": "0.1.0",
+  "description": "Provider-independent orchestration, durable events, SQLite persistence, and recovery for local coding agents.",
   "type": "module",
   "license": "MIT",
+  "author": "Triad Labs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ferran9908/harness-sdk.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/ferran9908/harness-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/ferran9908/harness-sdk/issues"
+  },
+  "keywords": [
+    "agent",
+    "codex",
+    "claude",
+    "electron",
+    "harness",
+    "sqlite"
+  ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -19,7 +38,11 @@
   "engines": {
     "node": ">=22.13"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b",
+    "prepack": "npm run build"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@harness-sdk/example-electron",
+  "name": "@triadlabs/harness-example-electron",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,9 +9,9 @@
     "smoke": "electron dist/smoke.js"
   },
   "dependencies": {
-    "@harness-sdk/claude": "0.1.0",
-    "@harness-sdk/codex": "0.1.0",
-    "@harness-sdk/core": "0.1.0"
+    "@triadlabs/harness-claude": "0.1.0",
+    "@triadlabs/harness-codex": "0.1.0",
+    "@triadlabs/harness": "0.1.0"
   },
   "devDependencies": {
     "electron": "43.3.0"

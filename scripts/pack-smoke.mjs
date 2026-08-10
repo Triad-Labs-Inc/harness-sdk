@@ -58,10 +58,10 @@ try {
     `import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createHarness, createMemoryStore } from "@harness-sdk/core";
-import { FakeProviderController, fakeProvider } from "@harness-sdk/testkit";
-import { createCodexProvider } from "@harness-sdk/codex";
-import { createClaudeProvider } from "@harness-sdk/claude";
+import { createHarness, createMemoryStore } from "@triadlabs/harness";
+import { FakeProviderController, fakeProvider } from "@triadlabs/harness-testkit";
+import { createCodexProvider } from "@triadlabs/harness-codex";
+import { createClaudeProvider } from "@triadlabs/harness-claude";
 
 const controller = new FakeProviderController();
 controller.enqueue(controller.script({ type: "text", chunks: ["packaged"] }, { type: "complete" }));
@@ -84,10 +84,10 @@ await harness.close();
 
   await writeFile(
     join(fixture, "declarations.ts"),
-    `import { createHarness, type ProviderAdapterV1 } from "@harness-sdk/core";
-import { createCodexProvider } from "@harness-sdk/codex";
-import { createClaudeProvider } from "@harness-sdk/claude";
-import { fakeProvider } from "@harness-sdk/testkit";
+    `import { createHarness, type ProviderAdapterV1 } from "@triadlabs/harness";
+import { createCodexProvider } from "@triadlabs/harness-codex";
+import { createClaudeProvider } from "@triadlabs/harness-claude";
+import { fakeProvider } from "@triadlabs/harness-testkit";
 
 const adapters: ProviderAdapterV1[] = [createCodexProvider(), createClaudeProvider(), fakeProvider()];
 void createHarness({ homeDir: ".", providers: Object.fromEntries(adapters.map(a => [a.id, a])) });

@@ -5,7 +5,7 @@ import type {
   SessionRecord,
   TurnId,
   TurnRecord,
-} from "@harness-sdk/core";
+} from "@triadlabs/harness";
 import { describe, expect, it } from "vitest";
 
 export type StorageContractFactory = () => Promise<HarnessStore> | HarnessStore;

@@ -4,13 +4,13 @@ Harness SDK's own packages are MIT licensed. Provider software remains independe
 
 ## Codex
 
-`@harness-sdk/codex` supervises a separately installed `codex app-server`. Applications are responsible for installing Codex, accepting its applicable terms, and authenticating it. Harness does not install, update, or log in to Codex. The upstream Codex repository and license are at <https://github.com/openai/codex>.
+`@triadlabs/harness-codex` supervises a separately installed `codex app-server`. Applications are responsible for installing Codex, accepting its applicable terms, and authenticating it. Harness does not install, update, or log in to Codex. The upstream Codex repository and license are at <https://github.com/openai/codex>.
 
 The Codex adapter depends on `cross-spawn` 7.0.6 to resolve executable and npm `.cmd` shims safely on Windows without interpolating provider arguments through a shell. `cross-spawn` and its `path-key`, `shebang-command`, `shebang-regex`, `which`, and `isexe` dependencies are MIT licensed. Their license texts and package metadata are included by npm in an installed dependency tree. Source and license information is available at <https://github.com/moxystudio/node-cross-spawn>.
 
 ## Claude Agent SDK and Claude Code
 
-`@harness-sdk/claude` declares `@anthropic-ai/claude-agent-sdk` as a dependency. That SDK declares its own license and optional platform-specific Claude Code packages; those terms are not replaced by Harness's MIT license. Review the installed SDK's `LICENSE.md`, package metadata, and Anthropic terms before redistribution.
+`@triadlabs/harness-claude` declares `@anthropic-ai/claude-agent-sdk` as a dependency. That SDK declares its own license and optional platform-specific Claude Code packages; those terms are not replaced by Harness's MIT license. Review the installed SDK's `LICENSE.md`, package metadata, and Anthropic terms before redistribution.
 
 The Claude adapter can delegate to credentials already available to the user-installed Claude Code runtime, including a local Claude.ai subscription login, or to API credentials supplied through the environment. Harness does not extract, persist, or log those credentials and does not perform login automatically.
 

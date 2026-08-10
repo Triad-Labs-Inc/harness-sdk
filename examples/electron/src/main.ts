@@ -1,8 +1,8 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { createClaudeProvider } from "@harness-sdk/claude";
-import { createCodexProvider } from "@harness-sdk/codex";
+import { createClaudeProvider } from "@triadlabs/harness-claude";
+import { createCodexProvider } from "@triadlabs/harness-codex";
 import {
   createHarness,
   type Harness,
@@ -10,7 +10,7 @@ import {
   type InteractionRequestId,
   type PermissionDecision,
   type SessionId,
-} from "@harness-sdk/core";
+} from "@triadlabs/harness";
 import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from "electron";
 
 import type { BootstrapData } from "./bridge.js";

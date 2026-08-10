@@ -1,9 +1,9 @@
-# @harness-sdk/codex
+# @triadlabs/harness-codex
 
 Codex `app-server` stdio adapter for Harness SDK.
 
 ```ts
-import { createCodexProvider } from "@harness-sdk/codex";
+import { createCodexProvider } from "@triadlabs/harness-codex";
 
 const provider = createCodexProvider({ executable: "/absolute/path/to/codex" });
 ```
