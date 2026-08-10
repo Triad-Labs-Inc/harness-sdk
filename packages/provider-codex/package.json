@@ -7,12 +7,12 @@
   "author": "Triad Labs",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ferran9908/harness-sdk.git",
+    "url": "git+https://github.com/Triad-Labs-Inc/harness-sdk.git",
     "directory": "packages/provider-codex"
   },
-  "homepage": "https://github.com/ferran9908/harness-sdk#readme",
+  "homepage": "https://github.com/Triad-Labs-Inc/harness-sdk#readme",
   "bugs": {
-    "url": "https://github.com/ferran9908/harness-sdk/issues"
+    "url": "https://github.com/Triad-Labs-Inc/harness-sdk/issues"
   },
   "keywords": [
     "agent",
