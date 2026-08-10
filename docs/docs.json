@@ -170,6 +170,7 @@
               "index",
               "getting-started/installation",
               "getting-started/quickstart",
+              "getting-started/electron-starter-prompt",
               "getting-started/core-concepts"
             ]
           },

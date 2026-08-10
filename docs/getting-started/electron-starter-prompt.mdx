@@ -1,0 +1,94 @@
+---
+title: "Electron starter prompt"
+description: "Paste one prompt into a coding agent to generate a standalone, multi-session Harness desktop app."
+icon: "wand-sparkles"
+---
+
+Use this prompt with Codex, Claude Code, Cursor, or another coding agent. It tells the agent where it may create files, which Harness boundaries to preserve, and how to prove the generated app works.
+
+<Tip>
+  Start the coding agent in an empty directory when you want the app created there. If the directory
+  already contains another project, the prompt requires the agent to create a separate
+  `harness-electron-app` directory without modifying unrelated files.
+</Tip>
+
+## Copy the prompt
+
+```text
+Build a runnable Electron desktop application for managing multiple local coding-agent sessions with Harness SDK. Complete the implementation, run its tests, and leave it ready for me to launch and try.
+
+Before writing files:
+
+1. Inspect the current directory.
+2. If it is empty apart from metadata such as `.git`, build the app in the current directory.
+3. If it contains an existing or unrelated project, create a child directory named `harness-electron-app` and work only there. If that name already exists, use the next available name such as `harness-electron-app-2`.
+4. Never delete, overwrite, or reconfigure unrelated files.
+
+Use this stack and dependency boundary:
+
+- TypeScript, Electron, React, Vite, and npm.
+- Node.js 22.13 or newer.
+- Install the published `@triadlabs/harness-sdk` package from npm. Do not use a local file, workspace, tarball, or sibling-repository dependency.
+- Import only public entrypoints: `@triadlabs/harness-sdk`, `@triadlabs/harness-sdk/codex`, `@triadlabs/harness-sdk/claude`, and `@triadlabs/harness-sdk/testkit` in tests.
+- Do not modify or vendor Harness SDK itself.
+
+Architecture and security requirements:
+
+- Create and own the Harness instance in Electron's main process. The renderer must never import Harness, provider adapters, SQLite, or Node process APIs.
+- Put Harness data in a stable directory below `app.getPath("userData")`. Let SQLite remain the production default.
+- Use a narrow, typed preload bridge and validated IPC messages. Enable `contextIsolation`, disable `nodeIntegration`, and sandbox the renderer when compatible with the selected Electron setup.
+- Never send credentials or the complete process environment over IPC. Never persist or log credentials or environment values.
+- Keep raw provider-event persistence at its default of `none`.
+- Do not expose an arbitrary shell or process-spawning API to the renderer.
+- Do not install providers, run login flows, or discover adapters automatically. Show clear setup guidance when Codex or Claude is unavailable or unauthenticated.
+- Close subscriptions and call `harness.close()` during app shutdown. Treat close as graceful and idempotent.
+
+Build the following user experience:
+
+- A desktop shell with a session sidebar and a main conversation workspace.
+- Provider status cards for Codex and Claude, including availability, authentication or setup guidance, and a Refresh button.
+- A prominent New session button. Its form must let the user choose Codex or Claude and select a project directory with Electron's native directory picker.
+- Support multiple independent sessions. Show each session's name, provider, project path, and current status in the sidebar.
+- Clicking a session must navigate to it without losing the state of other sessions. Restore known sessions after restarting the app.
+- For the selected session, show committed conversation events and status, plus counts for active, queued, and waiting-for-input work.
+- Add a composer with Send, Steer, and Stop controls. `send()` queues normally; steering and interruption must remain explicit operations. Disable controls when they are not valid for the current session state.
+- Default to supervised execution. If you offer a broader access mode, label it clearly and require an explicit user choice.
+- Render permission requests separately from provider questions or other requested input. Provide explicit approve, deny, and answer actions as appropriate.
+- Show useful empty, loading, error, provider-crash, and host-restart states instead of silently failing.
+- After recovery, never automatically replay an accepted turn or start queued work. Provide an explicit Resume queued work action when appropriate.
+
+Preserve these Harness semantics in the main-process application service:
+
+- There is at most one active turn per session; additional `send()` calls queue.
+- Events are committed before delivery, and their durable sequence values determine ordering.
+- Load `session.snapshot()` first, then subscribe with `afterSequence: snapshot.sequence` so startup has no event gap.
+- If a subscriber receives `SlowConsumerError`, replay from its `lastSequence` rather than dropping events.
+- Keep one main-process subscription per open session and project committed events into renderer-friendly state. Do not make the renderer reconstruct provider-specific events.
+- An active turn must surface `HOST_RESTARTED` after an app or host crash. Queued turns must remain paused until the user explicitly resumes them.
+- A provider crash must never cause an accepted turn to run again automatically.
+
+Testing and acceptance requirements:
+
+- Add deterministic tests using `@triadlabs/harness-sdk/testkit`. The default test suite must not require Codex, Claude, network access, credentials, login, or paid usage.
+- Test creating multiple sessions, switching between them, sending and queueing turns, committed-event projection, snapshot-plus-subscribe behavior, permission and question separation, interruption, and recovery controls.
+- Add a production build and an Electron smoke test that starts with an isolated temporary Harness home and does not require a real provider.
+- Keep real Codex and Claude checks optional and document how to run them manually.
+- Provide npm scripts named `dev`, `build`, `start`, `typecheck`, `test`, `format:check`, and `smoke`.
+- Run dependency installation, type checking, tests, formatting or lint checks, the production build, and the smoke test. Fix failures before stopping.
+
+Write a concise README that includes prerequisites, exact development and production commands, the app's process architecture, where local data is stored, how to authenticate Codex and Claude outside the app, how to override provider executable paths if supported, and how to run optional live-provider verification.
+
+Do not add auto-update, code signing, installers, hosted services, mobile support, arbitrary terminal attachment, worktrees, automatic provider installation or login, or private SDK imports. Those are outside this starter app.
+
+When finished, tell me:
+
+- Which directory you used.
+- What you implemented.
+- Every verification command you ran and whether it passed.
+- How to launch the app.
+- Any real-provider step I still need to perform manually.
+
+Do not stop at scaffolding. Continue until the standalone app launches and the offline acceptance suite passes, unless a genuine external blocker prevents it.
+```
+
+The generated app is intentionally a local-first proof of concept, not an installer or hosted product. Use the [Electron guide](/guides/electron) to review its process boundary and the [fake provider guide](/testing/fake-provider) to extend its offline tests.

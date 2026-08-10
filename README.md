@@ -104,6 +104,7 @@ npm run docs:a11y
 
 - [Product specification](./docs/specification.md): public behavior, terminology, and scope.
 - [Architecture](./docs/architecture.md): package boundaries, process ownership, and runtime flows.
+- [Electron starter prompt](./docs/getting-started/electron-starter-prompt.mdx): generate a standalone multi-session desktop app with any coding agent.
 - [Provider adapters](./docs/provider-adapters.md): adapter contract and the Codex and Claude mappings.
 - [Storage and events](./docs/storage-and-events.md): SQLite, replay, projections, and recovery.
 - [Implementation plan](./docs/implementation-plan.md): build order and acceptance criteria.

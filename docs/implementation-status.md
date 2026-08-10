@@ -472,3 +472,23 @@ npm run pack:check
 ```
 
 Results: formatting and linting passed. The package tarball, dependency-light installation, runtime imports, optional Vitest entrypoint, and declaration smoke tests passed.
+
+## Coding-agent Electron starter prompt — 2026-08-11
+
+Added a copy-ready, coding-agent-agnostic prompt at `getting-started/electron-starter-prompt.mdx` and linked it from the Mintlify Start here navigation and repository README. The prompt safely builds in an empty current directory or creates an isolated `harness-electron-app` child directory when unrelated files are present.
+
+The generated-app contract requires the published `@triadlabs/harness-sdk` package, Harness ownership in Electron's main process, typed and validated IPC, multiple navigable Codex and Claude sessions, explicit queue/steer/interrupt behavior, durable snapshot-plus-subscribe projection, supervised permissions, separate questions, recovery controls, and an offline deterministic acceptance suite. Provider login and live-provider checks remain explicit manual steps.
+
+Commands run:
+
+```text
+npx prettier --write docs/getting-started/electron-starter-prompt.mdx docs/docs.json README.md
+git diff --check
+npm run format:check
+npm run docs:validate
+npm run docs:a11y
+npm run docs:dev -- --no-open --port 3333
+curl --location http://localhost:3333/getting-started/electron-starter-prompt
+```
+
+Results: formatting passed, Mintlify strict build validation passed, and the accessibility audit found no issues across all 35 checked MDX files. The local preview returned HTTP 200 for the new route and rendered the prompt title, app instruction, and safe fallback directory name.
