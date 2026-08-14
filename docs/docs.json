@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "linden",
   "name": "Harness SDK",
-  "description": "Build local Codex and Claude agent applications with durable sessions, streaming events, permissions, and SQLite recovery.",
+  "description": "Build local and remote agent applications with durable sessions, streaming events, permissions, and SQLite recovery.",
   "colors": {
     "primary": "#065F46",
     "light": "#4ADDB8",
@@ -141,6 +141,10 @@
       "destination": "/providers/claude"
     },
     {
+      "source": "/api/provider-mastra",
+      "destination": "/providers/mastra"
+    },
+    {
       "source": "/api/testkit",
       "destination": "/testing/fake-provider"
     },
@@ -177,7 +181,12 @@
           {
             "group": "Providers",
             "icon": "bot",
-            "pages": ["providers/overview", "providers/codex", "providers/claude"]
+            "pages": [
+              "providers/overview",
+              "providers/codex",
+              "providers/claude",
+              "providers/mastra"
+            ]
           },
           {
             "group": "Build your application",

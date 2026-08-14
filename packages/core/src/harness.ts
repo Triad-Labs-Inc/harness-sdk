@@ -346,6 +346,8 @@ class SessionCoordinator {
       throw new UnsupportedCapabilityError("model override", this.#adapter.id);
     if (request.reasoning !== undefined && !capabilities.reasoningOverride)
       throw new UnsupportedCapabilityError("reasoning override", this.#adapter.id);
+    if (request.permissionMode !== undefined && !capabilities.permissions)
+      throw new UnsupportedCapabilityError("permission mode", this.#adapter.id);
 
     const now = new Date().toISOString();
     const id = randomUUID() as TurnId;
@@ -471,22 +473,52 @@ class SessionCoordinator {
     }
     const active = this.#active;
     if (active) {
+      // Stop the consumer from committing a provider terminal concurrently
+      // while shutdown establishes the authoritative outcome below.
+      this.#active = undefined;
       await this.#expireInteractions(active.record.id);
+      let interruptError: unknown;
       try {
         await this.#runtime?.interrupt?.();
-      } catch {
-        // Forced runtime close below is the fallback.
+      } catch (error) {
+        interruptError = error;
       }
-      if (this.#active?.record.id === active.record.id) {
-        const result: TurnResult = { status: "interrupted", reason };
-        await this.#host.append({
-          sessionId: this.#session.id,
-          turnId: active.record.id,
-          type: "turn.interrupted",
-          data: { reason },
-        });
+      const stored = await this.#host.store.getTurn(active.record.id);
+      if (stored?.result) {
+        active.deferred.resolve(stored.result);
+      } else {
+        const result: TurnResult = interruptError
+          ? {
+              status: "failed",
+              error: {
+                code: "PROVIDER_INTERRUPT_FAILED",
+                message:
+                  interruptError instanceof Error
+                    ? interruptError.message
+                    : "Provider interruption failed during shutdown",
+              },
+              mayHaveSideEffects: true,
+            }
+          : { status: "interrupted", reason };
+        await this.#host.append(
+          result.status === "failed"
+            ? {
+                sessionId: this.#session.id,
+                turnId: active.record.id,
+                type: "turn.failed",
+                data: {
+                  error: result.error,
+                  mayHaveSideEffects: result.mayHaveSideEffects,
+                },
+              }
+            : {
+                sessionId: this.#session.id,
+                turnId: active.record.id,
+                type: "turn.interrupted",
+                data: { reason },
+              },
+        );
         active.deferred.resolve(result);
-        this.#active = undefined;
       }
     }
     await this.#runtime?.close().catch(() => undefined);

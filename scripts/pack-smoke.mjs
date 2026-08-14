@@ -33,6 +33,8 @@ try {
     "dist/codex/index.d.ts",
     "dist/claude/index.js",
     "dist/claude/index.d.ts",
+    "dist/mastra/index.js",
+    "dist/mastra/index.d.ts",
     "dist/testkit/index.js",
     "dist/testkit/index.d.ts",
     "dist/testkit/vitest.js",
@@ -57,6 +59,12 @@ try {
   try {
     await access(join(fixture, "node_modules/vitest/package.json"));
     throw new Error("A normal Harness install unexpectedly included optional Vitest");
+  } catch (error) {
+    if (error instanceof Error && !error.message.includes("ENOENT")) throw error;
+  }
+  try {
+    await access(join(fixture, "node_modules/@mastra/client-js/package.json"));
+    throw new Error("A normal Harness install unexpectedly included the optional Mastra client");
   } catch (error) {
     if (error instanceof Error && !error.message.includes("ENOENT")) throw error;
   }
@@ -89,9 +97,10 @@ await harness.close();
   );
   await run(process.execPath, [join(fixture, "smoke.mjs")], { cwd: fixture });
 
-  await runNpm(["install", "--ignore-scripts", "--save-dev", "vitest@4.1.10"], {
-    cwd: fixture,
-  });
+  await runNpm(
+    ["install", "--ignore-scripts", "--save-dev", "vitest@4.1.10", "@mastra/client-js@1.39.0"],
+    { cwd: fixture },
+  );
   await writeFile(
     join(fixture, "contract-smoke.mjs"),
     `import { providerContract, storageContract } from "@triadlabs/harness-sdk/testkit/vitest";
@@ -107,10 +116,16 @@ if (typeof providerContract !== "function" || typeof storageContract !== "functi
     `import { createHarness, type ProviderAdapterV1 } from "@triadlabs/harness-sdk";
 import { createCodexProvider } from "@triadlabs/harness-sdk/codex";
 import { createClaudeProvider } from "@triadlabs/harness-sdk/claude";
+import { createMastraProvider } from "@triadlabs/harness-sdk/mastra";
 import { fakeProvider } from "@triadlabs/harness-sdk/testkit";
 import { providerContract, storageContract } from "@triadlabs/harness-sdk/testkit/vitest";
 
-const adapters: ProviderAdapterV1[] = [createCodexProvider(), createClaudeProvider(), fakeProvider()];
+const adapters: ProviderAdapterV1[] = [
+  createCodexProvider(),
+  createClaudeProvider(),
+  createMastraProvider({ baseUrl: "http://127.0.0.1:4111", agentId: "fixture" }),
+  fakeProvider(),
+];
 void createHarness({ homeDir: ".", providers: Object.fromEntries(adapters.map(a => [a.id, a])) });
 void providerContract;
 void storageContract;

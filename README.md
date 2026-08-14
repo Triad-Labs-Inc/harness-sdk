@@ -1,10 +1,10 @@
 # Harness SDK
 
-Harness SDK is a TypeScript library for building terminal and Electron applications that control coding agents installed on the user's machine.
+Harness SDK is a TypeScript library for building terminal and Electron applications that control local and remote agents.
 
-The SDK presents one application-facing API while provider adapters handle the differences between Codex, Claude Code, and future agent harnesses. The first release targets the Codex app-server and the Claude Agent SDK. OpenCode, Goose, and Pi can be added later through the same adapter contract.
+The SDK presents one application-facing API while provider adapters handle the differences between Codex, Claude Code, Mastra, and future agent harnesses.
 
-The first implementation includes the core runtime, memory and SQLite stores, Codex and Claude adapters, a deterministic testkit, and TUI and Electron reference applications. The specification and design decisions remain the behavioral contract.
+The implementation includes the core runtime, memory and SQLite stores, Codex, Claude, and Mastra adapters, a deterministic testkit, and TUI and Electron reference applications. The specification and design decisions remain the behavioral contract.
 
 ## What developers should be able to build
 
@@ -12,7 +12,7 @@ The first implementation includes the core runtime, memory and SQLite stores, Co
 - An Electron application whose main process owns the SDK, local agent processes, and SQLite database.
 - Multiple independent sessions, such as a coder session and a reviewer session, running at the same time.
 
-The SDK is a local developer tool. It does not provide a hosted service, user accounts, billing, or a user interface.
+The SDK is an application runtime. It does not provide a hosted service, user accounts, billing, or a user interface.
 
 For a working desktop starting point, clone the public [Harness Electron Starter](https://github.com/Triad-Labs-Inc/harness-electron-starter) or create a new repository from its GitHub template.
 
@@ -21,6 +21,7 @@ Harness SDK is published as one package with explicit provider and testing subpa
 - `@triadlabs/harness-sdk` — provider-independent orchestration, storage, events, and lifecycle
 - `@triadlabs/harness-sdk/codex` — Codex app-server adapter
 - `@triadlabs/harness-sdk/claude` — Claude Agent SDK adapter
+- `@triadlabs/harness-sdk/mastra` — Mastra-native remote agent adapter
 - `@triadlabs/harness-sdk/testkit` — deterministic fake provider with no test-runner dependency
 - `@triadlabs/harness-sdk/testkit/vitest` — optional Vitest provider and storage contract suites
 
@@ -30,6 +31,7 @@ Harness SDK is published as one package with explicit provider and testing subpa
 - An application-owned `homeDir`.
 - Codex installed and authenticated for `@triadlabs/harness-sdk/codex`.
 - Claude Code authenticated with `claude auth login`, or Claude API credentials available to the process, for `@triadlabs/harness-sdk/claude`.
+- `@mastra/client-js` plus a reachable Mastra agent for `@triadlabs/harness-sdk/mastra`.
 
 Real-provider tests are opt-in. The default build and test suite needs no provider installation, network, credentials, or paid usage.
 

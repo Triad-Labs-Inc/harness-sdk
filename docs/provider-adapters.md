@@ -1,6 +1,6 @@
 # Provider adapters
 
-This document defines the boundary between Harness core and a coding-agent provider. It also records how the first Codex and Claude adapters map their native concepts into Harness concepts.
+This document defines the boundary between Harness core and an agent provider. It also records how the Codex, Claude, and Mastra adapters map their native concepts into Harness concepts.
 
 ## Public adapter contract
 
@@ -119,6 +119,14 @@ The native callback may stay pending while the application asks the user. The ad
 Claude identifies some answers by question text. Harness uses stable question IDs externally, so the adapter must retain an internal ID-to-native-question mapping for each request.
 
 See the official [Claude Agent SDK overview](https://code.claude.com/docs/en/agent-sdk/overview), [permissions documentation](https://code.claude.com/docs/en/agent-sdk/permissions), and [user-input documentation](https://code.claude.com/docs/en/agent-sdk/user-input).
+
+## Mastra adapter
+
+The Mastra adapter uses `@mastra/client-js` to execute turns through the native agent stream API. It stores thread and resource IDs as provider metadata, forwards the Harness turn ID as the Mastra run ID, and deliberately omits raw stream chunks because terminal envelopes can contain upstream response metadata.
+
+The adapter confirms thread-wide remote abort before closing its local stream. It persists an active-turn marker before issuing a request and fails closed after an unconfirmed cancellation or host crash, preventing a subsequent turn from overlapping remote work whose execution state is unknown. The optional A2A card contributes status metadata only; execution is not translated to A2A.
+
+Mastra manages its own remote tool policy. The version 1 adapter therefore advertises no Harness permissions or questions and treats remote approval or suspension chunks as unsupported terminal failures that must be remotely aborted.
 
 ### Authentication and distribution responsibility
 

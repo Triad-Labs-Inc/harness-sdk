@@ -94,15 +94,6 @@ export function providerContract(name: string, factory: ProviderContractFactory)
         state: "ready",
       });
       const capabilities = await harness.providers[adapter.id]!.capabilities();
-      expect(capabilities).toMatchObject({
-        interruption: true,
-        permissions: true,
-        questions: true,
-        sessionResume: true,
-        modelOverride: true,
-        reasoningOverride: true,
-        rawEvents: true,
-      });
       expect(Object.keys(capabilities).sort()).toEqual(
         [
           "steering",
@@ -144,6 +135,27 @@ export function providerContract(name: string, factory: ProviderContractFactory)
       await harness.close();
     });
 
+    it("rejects request options for capabilities it does not advertise", async () => {
+      const { harness, session, adapter } = await fixture(factory, "stream");
+      const capabilities = await harness.providers[adapter.id]!.capabilities();
+      if (!capabilities.modelOverride) {
+        await expect(
+          session.send({ text: "unsupported", model: "fixture" }),
+        ).rejects.toBeInstanceOf(UnsupportedCapabilityError);
+      }
+      if (!capabilities.reasoningOverride) {
+        await expect(
+          session.send({ text: "unsupported", reasoning: "high" }),
+        ).rejects.toBeInstanceOf(UnsupportedCapabilityError);
+      }
+      if (!capabilities.permissions) {
+        await expect(
+          session.send({ text: "unsupported", permissionMode: "full_access" }),
+        ).rejects.toBeInstanceOf(UnsupportedCapabilityError);
+      }
+      await harness.close();
+    });
+
     it("normalizes tool lifecycle events", async () => {
       const { harness, session } = await fixture(factory, "tools");
       await expect((await session.send({ text: "tools" })).done()).resolves.toEqual({
@@ -162,7 +174,12 @@ export function providerContract(name: string, factory: ProviderContractFactory)
       "permission_cancel",
     ] as const) {
       it(`translates ${scenario.replace("permission_", "")} permission decisions`, async () => {
-        const { harness, session } = await fixture(factory, scenario);
+        const { harness, session, adapter } = await fixture(factory, scenario);
+        const capabilities = await harness.providers[adapter.id]!.capabilities();
+        if (!capabilities.permissions) {
+          await harness.close();
+          return;
+        }
         const snapshot = await session.snapshot();
         const subscription = await session.subscribe(
           { afterSequence: snapshot.sequence },
@@ -185,7 +202,12 @@ export function providerContract(name: string, factory: ProviderContractFactory)
     }
 
     it("translates single, multiple, and free-text questions", async () => {
-      const { harness, session } = await fixture(factory, "questions");
+      const { harness, session, adapter } = await fixture(factory, "questions");
+      const capabilities = await harness.providers[adapter.id]!.capabilities();
+      if (!capabilities.questions) {
+        await harness.close();
+        return;
+      }
       const snapshot = await session.snapshot();
       const subscription = await session.subscribe(
         { afterSequence: snapshot.sequence },
@@ -215,7 +237,13 @@ export function providerContract(name: string, factory: ProviderContractFactory)
     });
 
     it("interrupts an active turn without replay", async () => {
-      const { harness, session } = await fixture(factory, "interrupt");
+      const { harness, session, adapter } = await fixture(factory, "interrupt");
+      const capabilities = await harness.providers[adapter.id]!.capabilities();
+      if (!capabilities.interruption) {
+        await expect(session.interrupt()).rejects.toBeInstanceOf(UnsupportedCapabilityError);
+        await harness.close();
+        return;
+      }
       const turn = await session.send({ text: "interrupt" });
       await waitFor(async () => {
         try {
@@ -284,7 +312,12 @@ export function providerContract(name: string, factory: ProviderContractFactory)
     });
 
     it("can reopen a suspended provider session", async () => {
-      const { harness, session } = await fixture(factory, "resume", 5);
+      const { harness, session, adapter } = await fixture(factory, "resume", 5);
+      const capabilities = await harness.providers[adapter.id]!.capabilities();
+      if (!capabilities.sessionResume) {
+        await harness.close();
+        return;
+      }
       await expect((await session.send({ text: "resume-first" })).done()).resolves.toEqual({
         status: "completed",
       });

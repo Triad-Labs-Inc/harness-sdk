@@ -5,6 +5,7 @@
     { "path": "packages/testkit" },
     { "path": "packages/provider-codex" },
     { "path": "packages/provider-claude" },
+    { "path": "packages/provider-mastra" },
     { "path": "examples/tui" },
     { "path": "examples/electron" }
   ]

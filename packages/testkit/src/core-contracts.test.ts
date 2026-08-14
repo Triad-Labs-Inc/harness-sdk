@@ -61,6 +61,7 @@ describe("core event and lifecycle contracts", () => {
     capabilityController.capabilities = {
       ...capabilityController.capabilities,
       modelOverride: false,
+      permissions: false,
     };
     const capabilityHarness = await createHarness({
       homeDir: capabilityHome,
@@ -70,6 +71,9 @@ describe("core event and lifecycle contracts", () => {
     const capabilitySession = await capabilityHarness.sessions.create({ provider: "fake" });
     await expect(
       capabilitySession.send({ text: "must not be accepted", model: "unsupported" }),
+    ).rejects.toBeInstanceOf(UnsupportedCapabilityError);
+    await expect(
+      capabilitySession.send({ text: "must not be accepted", permissionMode: "full_access" }),
     ).rejects.toBeInstanceOf(UnsupportedCapabilityError);
     expect((await capabilitySession.history({ limit: 100 })).events).toHaveLength(1);
     await capabilityHarness.close();
@@ -347,6 +351,56 @@ describe("core event and lifecycle contracts", () => {
       mayHaveSideEffects: false,
     });
     expect(controller.starts).toHaveLength(1);
+  });
+
+  it("reports an uncertain active turn when provider interruption fails during shutdown", async () => {
+    const homeDir = await mkdtemp(join(tmpdir(), "harness-interrupt-failure-"));
+    let started!: () => void;
+    let failStream!: (error: Error) => void;
+    const turnStarted = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const stream = new Promise<IteratorResult<never>>((_resolve, reject) => {
+      failStream = reject;
+    });
+    const base = fakeProvider(new FakeProviderController());
+    const adapter: ProviderAdapterV1 = {
+      ...base,
+      async openSession() {
+        return {
+          startTurn() {
+            started();
+            return {
+              [Symbol.asyncIterator]() {
+                return {
+                  next: () => stream,
+                };
+              },
+            };
+          },
+          async interrupt() {
+            failStream(new Error("local stream closed during cancellation"));
+            await Promise.resolve();
+            throw new Error("remote cancellation was not confirmed");
+          },
+          async close() {},
+        };
+      },
+    };
+    const harness = await createHarness({
+      homeDir,
+      providers: { fake: adapter },
+      store: createMemoryStore(),
+    });
+    const session = await harness.sessions.create({ provider: "fake", cwd: homeDir });
+    const turn = await session.send({ text: "remote side effects" });
+    await turnStarted;
+    await harness.close();
+    await expect(turn.done()).resolves.toMatchObject({
+      status: "failed",
+      error: { code: "PROVIDER_INTERRUPT_FAILED" },
+      mayHaveSideEffects: true,
+    });
   });
 
   it("expires an unresolved interaction when the provider crashes", async () => {

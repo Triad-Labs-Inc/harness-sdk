@@ -1,7 +1,7 @@
 {
   "name": "@triadlabs/harness-sdk",
   "version": "0.1.0",
-  "description": "A durable TypeScript SDK for building local Codex and Claude agent applications.",
+  "description": "A durable TypeScript SDK for building local and remote agent applications.",
   "type": "module",
   "license": "MIT",
   "author": "Triad Labs",
@@ -20,6 +20,7 @@
     "claude",
     "electron",
     "harness",
+    "mastra",
     "sqlite"
   ],
   "main": "./dist/index.js",
@@ -36,6 +37,10 @@
     "./claude": {
       "types": "./dist/claude/index.d.ts",
       "import": "./dist/claude/index.js"
+    },
+    "./mastra": {
+      "types": "./dist/mastra/index.d.ts",
+      "import": "./dist/mastra/index.js"
     },
     "./testkit": {
       "types": "./dist/testkit/index.d.ts",
@@ -64,9 +69,13 @@
     "cross-spawn": "7.0.6"
   },
   "peerDependencies": {
+    "@mastra/client-js": "^1.39.0",
     "vitest": "4.1.10"
   },
   "peerDependenciesMeta": {
+    "@mastra/client-js": {
+      "optional": true
+    },
     "vitest": {
       "optional": true
     }

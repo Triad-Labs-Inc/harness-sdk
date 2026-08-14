@@ -1,12 +1,12 @@
 ---
 title: "Harness SDK"
-description: "A durable TypeScript runtime for local Codex and Claude agent applications."
+description: "A durable TypeScript runtime for local and remote agent applications."
 mode: "wide"
 ---
 
 # Build the agent application. Keep the provider replaceable.
 
-Harness SDK gives Node.js and Electron applications one durable API for local coding agents. Your application owns the interface. Harness owns sessions, queued turns, normalized events, SQLite persistence, permissions, recovery, and provider lifecycle.
+Harness SDK gives Node.js and Electron applications one durable API for local and remote agents. Your application owns the interface. Harness owns sessions, queued turns, normalized events, SQLite persistence, permissions, recovery, and provider lifecycle.
 
 ```bash
 npm install @triadlabs/harness-sdk
@@ -17,9 +17,9 @@ npm install @triadlabs/harness-sdk
     Events commit to SQLite before delivery. Snapshots and sequence replay keep application state
     consistent.
   </Card>
-  <Card title="Codex and Claude" icon="bot" href="/providers/overview">
-    Register either official adapter, or both, while your application uses the same session and turn
-    API.
+  <Card title="Codex, Claude, and Mastra" icon="bot" href="/providers/overview">
+    Register local coding agents, remote Mastra agents, or both while your application uses the same
+    session and turn API.
   </Card>
   <Card title="Built for local apps" icon="app-window" href="/guides/electron">
     Run Harness in a terminal process or Electron's main process. Provider processes and credentials

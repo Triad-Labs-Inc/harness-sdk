@@ -1,0 +1,52 @@
+{
+  "name": "@triadlabs/harness-sdk-internal-mastra",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mastra agent provider adapter for Triad Labs Harness SDK.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Triad Labs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Triad-Labs-Inc/harness-sdk.git",
+    "directory": "packages/provider-mastra"
+  },
+  "homepage": "https://github.com/Triad-Labs-Inc/harness-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/Triad-Labs-Inc/harness-sdk/issues"
+  },
+  "keywords": [
+    "agent",
+    "cloud",
+    "harness",
+    "mastra",
+    "remote"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "@mastra/client-js": "1.39.0",
+    "@triadlabs/harness-sdk": "0.1.0"
+  },
+  "devDependencies": {
+    "vitest": "4.1.10"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "prepack": "npm run build"
+  }
+}
