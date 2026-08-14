@@ -84,4 +84,15 @@ function adapterFor(scenario: ProviderContractScenario): ProviderAdapterV1 {
   return fakeProvider(controller);
 }
 
-providerContract("fake", adapterFor);
+providerContract("fake", adapterFor, {
+  expectedCapabilities: {
+    steering: true,
+    interruption: true,
+    permissions: true,
+    questions: true,
+    sessionResume: true,
+    modelOverride: true,
+    reasoningOverride: true,
+    rawEvents: true,
+  },
+});

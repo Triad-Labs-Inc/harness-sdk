@@ -103,4 +103,4 @@ Exports `FakeProviderController` and `fakeProvider()`. The fake supports determi
 
 ## `@triadlabs/harness-sdk/testkit/vitest`
 
-Exports `storageContract()` and `providerContract()` for Vitest users who implement custom stores or provider adapters. Vitest is an optional peer dependency and is not installed for production consumers that use only the root or provider entrypoints.
+Exports `storageContract()` and `providerContract()` for Vitest users who implement custom stores or provider adapters. Pass `expectedCapabilities` to `providerContract()` to pin the adapter's intended capability matrix while capability-specific scenarios remain gated. Vitest is an optional peer dependency and is not installed for production consumers that use only the root or provider entrypoints.

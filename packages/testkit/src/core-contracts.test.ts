@@ -355,6 +355,7 @@ describe("core event and lifecycle contracts", () => {
 
   it("reports an uncertain active turn when provider interruption fails during shutdown", async () => {
     const homeDir = await mkdtemp(join(tmpdir(), "harness-interrupt-failure-"));
+    const secret = "shutdown-interrupt-secret";
     let started!: () => void;
     let failStream!: (error: Error) => void;
     const turnStarted = new Promise<void>((resolve) => {
@@ -366,6 +367,10 @@ describe("core event and lifecycle contracts", () => {
     const base = fakeProvider(new FakeProviderController());
     const adapter: ProviderAdapterV1 = {
       ...base,
+      async status(context) {
+        context.registerSecrets([secret]);
+        return await base.status(context);
+      },
       async openSession() {
         return {
           startTurn() {
@@ -381,7 +386,7 @@ describe("core event and lifecycle contracts", () => {
           async interrupt() {
             failStream(new Error("local stream closed during cancellation"));
             await Promise.resolve();
-            throw new Error("remote cancellation was not confirmed");
+            throw new Error(`remote cancellation was not confirmed: ${secret}`);
           },
           async close() {},
         };
@@ -396,11 +401,65 @@ describe("core event and lifecycle contracts", () => {
     const turn = await session.send({ text: "remote side effects" });
     await turnStarted;
     await harness.close();
-    await expect(turn.done()).resolves.toMatchObject({
+    const result = await turn.done();
+    expect(result).toMatchObject({
       status: "failed",
-      error: { code: "PROVIDER_INTERRUPT_FAILED" },
+      error: {
+        code: "PROVIDER_INTERRUPT_FAILED",
+        message: "remote cancellation was not confirmed: <redacted>",
+      },
       mayHaveSideEffects: true,
     });
+    expect(JSON.stringify(result)).not.toContain(secret);
+  });
+
+  it("does not start a turn after shutdown while its provider runtime is opening", async () => {
+    const homeDir = await mkdtemp(join(tmpdir(), "harness-runtime-open-close-"));
+    let runtimeOpened!: () => void;
+    let releaseRuntime!: () => void;
+    const opening = new Promise<void>((resolve) => {
+      runtimeOpened = resolve;
+    });
+    const release = new Promise<void>((resolve) => {
+      releaseRuntime = resolve;
+    });
+    let starts = 0;
+    let closes = 0;
+    const base = fakeProvider(new FakeProviderController());
+    const adapter: ProviderAdapterV1 = {
+      ...base,
+      async openSession() {
+        runtimeOpened();
+        await release;
+        return {
+          async *startTurn() {
+            starts += 1;
+            yield { type: "turn.completed" as const };
+          },
+          async interrupt() {},
+          async close() {
+            closes += 1;
+          },
+        };
+      },
+    };
+    const harness = await createHarness({
+      homeDir,
+      providers: { fake: adapter },
+      store: createMemoryStore(),
+    });
+    const session = await harness.sessions.create({ provider: "fake", cwd: homeDir });
+    const turn = await session.send({ text: "must not start after close" });
+    await opening;
+
+    const closing = harness.close();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    releaseRuntime();
+    await closing;
+
+    await expect(turn.done()).resolves.toMatchObject({ status: "interrupted" });
+    expect(starts).toBe(0);
+    expect(closes).toBe(1);
   });
 
   it("expires an unresolved interaction when the provider crashes", async () => {

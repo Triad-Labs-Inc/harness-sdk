@@ -313,6 +313,7 @@ class SessionCoordinator {
   readonly #session: SessionRecord;
   readonly #adapter: ProviderAdapterV1;
   #runtime: ProviderRuntime | undefined;
+  #runtimeOpening: Promise<ProviderRuntime> | undefined;
   #queue: RuntimeTurn[] = [];
   #active: RuntimeTurn | undefined;
   #handles = new Map<TurnId, Deferred<TurnResult>>();
@@ -477,9 +478,10 @@ class SessionCoordinator {
       // while shutdown establishes the authoritative outcome below.
       this.#active = undefined;
       await this.#expireInteractions(active.record.id);
+      const runtime = this.#runtime ?? (await this.#runtimeOpening?.catch(() => undefined));
       let interruptError: unknown;
       try {
-        await this.#runtime?.interrupt?.();
+        await runtime?.interrupt?.();
       } catch (error) {
         interruptError = error;
       }
@@ -494,7 +496,7 @@ class SessionCoordinator {
                 code: "PROVIDER_INTERRUPT_FAILED",
                 message:
                   interruptError instanceof Error
-                    ? interruptError.message
+                    ? this.#host.redactor.text(interruptError.message)
                     : "Provider interruption failed during shutdown",
               },
               mayHaveSideEffects: true,
@@ -521,7 +523,8 @@ class SessionCoordinator {
         active.deferred.resolve(result);
       }
     }
-    await this.#runtime?.close().catch(() => undefined);
+    const runtime = this.#runtime ?? (await this.#runtimeOpening?.catch(() => undefined));
+    await runtime?.close().catch(() => undefined);
     this.#runtime = undefined;
   }
 
@@ -546,7 +549,9 @@ class SessionCoordinator {
         type: "turn.started",
         data: {},
       });
+      if (this.#shuttingDown || this.#active?.record.id !== next.record.id) return;
       const runtime = await this.#getRuntime();
+      if (this.#shuttingDown || this.#active?.record.id !== next.record.id) return;
       for await (const event of runtime.startTurn({
         ...next.record.request,
         sessionId: this.#session.id,
@@ -831,6 +836,7 @@ class SessionCoordinator {
 
   async #getRuntime(): Promise<ProviderRuntime> {
     if (this.#runtime) return this.#runtime;
+    if (this.#runtimeOpening) return await this.#runtimeOpening;
     const context: OpenSessionContext = {
       ...this.#host.providerContext,
       sessionId: this.#session.id,
@@ -839,8 +845,17 @@ class SessionCoordinator {
       setMetadata: (key, value) =>
         this.#host.store.setProviderMetadata(this.#session.id, key, value),
     };
-    this.#runtime = await this.#adapter.openSession(context);
-    return this.#runtime;
+    const opening = this.#adapter
+      .openSession(context)
+      .then((runtime) => {
+        this.#runtime = runtime;
+        return runtime;
+      })
+      .finally(() => {
+        if (this.#runtimeOpening === opening) this.#runtimeOpening = undefined;
+      });
+    this.#runtimeOpening = opening;
+    return await opening;
   }
 
   async #expireInteractions(turnId: TurnId): Promise<void> {

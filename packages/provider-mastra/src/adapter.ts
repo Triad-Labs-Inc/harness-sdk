@@ -561,6 +561,99 @@ function responseLimitedFetch(baseFetch: typeof fetch, maxBytes: number): typeof
   }) as typeof fetch;
 }
 
+function streamMastraTurn(
+  options: NormalizedOptions,
+  signal: AbortSignal,
+  request: ProviderTurnRequest,
+  identity: SessionIdentity,
+): Promise<Response> {
+  const fetchStream = responseLimitedFetch(
+    options.fetch ?? globalThis.fetch,
+    options.maxStreamBytes,
+  );
+  return fetchStream(`${options.baseUrl}/api/agents/${options.agentId}/stream`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      ...(options.authToken ? { Authorization: `Bearer ${options.authToken}` } : {}),
+    },
+    body: JSON.stringify({
+      messages: request.text,
+      runId: request.turnId,
+      memory: {
+        thread: identity.threadId,
+        resource: identity.resourceId,
+      },
+      ...(request.model ? { model: request.model } : {}),
+    }),
+    signal,
+  });
+}
+
+async function processMastraDataStream(
+  body: ReadableStream<Uint8Array> | null,
+  maxChunkBytes: number,
+  onChunk: (chunk: unknown) => Promise<void>,
+): Promise<void> {
+  if (!body) throw new Error("Mastra stream response had no body");
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  const dispatch = async (block: string): Promise<boolean> => {
+    const data = block
+      .split("\n")
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => {
+        const value = line.slice(5);
+        return value.startsWith(" ") ? value.slice(1) : value;
+      })
+      .join("\n");
+    if (!data) return false;
+    if (data === "[DONE]") return true;
+    if (Buffer.byteLength(data, "utf8") > maxChunkBytes) {
+      throw new Error(`Mastra chunk exceeded the ${maxChunkBytes}-byte limit`);
+    }
+    let chunk: unknown;
+    try {
+      chunk = JSON.parse(data);
+    } catch {
+      throw new Error("Mastra stream contained invalid JSON");
+    }
+    await onChunk(chunk);
+    return false;
+  };
+
+  const drain = async (): Promise<boolean> => {
+    buffer = buffer.replaceAll("\r\n", "\n");
+    let boundary = buffer.indexOf("\n\n");
+    while (boundary >= 0) {
+      const block = buffer.slice(0, boundary);
+      buffer = buffer.slice(boundary + 2);
+      if (await dispatch(block)) return true;
+      boundary = buffer.indexOf("\n\n");
+    }
+    return false;
+  };
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      if (await drain()) {
+        await reader.cancel().catch(() => undefined);
+        return;
+      }
+    }
+    buffer += decoder.decode();
+    await drain();
+    if (buffer.trim() && (await dispatch(buffer.trim()))) return;
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 function chunkByteLength(chunk: unknown): number {
   const serialized = JSON.stringify(chunk);
   return serialized === undefined ? 0 : Buffer.byteLength(serialized, "utf8");
@@ -702,43 +795,34 @@ class MastraRuntime implements ProviderRuntime {
         };
         return;
       }
-      const agent = clientFor(
+      remoteRequestStarted = true;
+      const response = await streamMastraTurn(
         this.#options,
         active.controller.signal,
-        this.#options.maxStreamBytes,
-      ).getAgent(this.#options.agentId);
-      remoteRequestStarted = true;
-      const response = await agent.stream(request.text, {
-        runId: request.turnId,
-        memory: {
-          thread: this.#identity.threadId,
-          resource: this.#identity.resourceId,
-        },
-        ...(request.model ? { model: request.model } : {}),
-      });
+        request,
+        this.#identity,
+      );
 
       if (!response.ok) {
         throw new Error(`Mastra returned ${response.status} ${response.statusText}`);
       }
 
-      await response.processDataStream({
-        onChunk: async (chunk) => {
-          if (chunkByteLength(chunk) > this.#options.maxChunkBytes) {
-            throw new Error(`Mastra chunk exceeded the ${this.#options.maxChunkBytes}-byte limit`);
-          }
-          for (const event of projectMastraChunk(chunk, state)) {
-            await queue.push(event);
-          }
-          if (
-            state.terminal &&
-            !(
-              state.terminal.type === "turn.failed" &&
-              state.terminal.code === "MASTRA_INTERACTION_UNSUPPORTED"
-            )
-          ) {
-            active.remoteTerminalObserved = true;
-          }
-        },
+      await processMastraDataStream(response.body, this.#options.maxChunkBytes, async (chunk) => {
+        if (chunkByteLength(chunk) > this.#options.maxChunkBytes) {
+          throw new Error(`Mastra chunk exceeded the ${this.#options.maxChunkBytes}-byte limit`);
+        }
+        for (const event of projectMastraChunk(chunk, state)) {
+          await queue.push(event);
+        }
+        if (
+          state.terminal &&
+          !(
+            state.terminal.type === "turn.failed" &&
+            state.terminal.code === "MASTRA_INTERACTION_UNSUPPORTED"
+          )
+        ) {
+          active.remoteTerminalObserved = true;
+        }
       });
     } catch (error) {
       if (!active.interruptPromise) {

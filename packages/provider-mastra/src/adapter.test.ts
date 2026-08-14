@@ -5,7 +5,7 @@ import type {
   SessionId,
   TurnId,
 } from "@triadlabs/harness-sdk";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   createMastraProvider,
@@ -294,6 +294,42 @@ describe("Mastra provider runtime", () => {
     });
     expect(JSON.stringify(status)).not.toContain("secret-cookie");
     expect(JSON.stringify(status)).not.toContain("upstream failed");
+  });
+
+  it("does not write remote stream errors to the application console", async () => {
+    const secret = "mastra-stream-secret";
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const provider = createMastraProvider({
+      baseUrl: "https://example.mastra.cloud",
+      agentId: "agent",
+      authToken: secret,
+      fetch: async (input, init) => {
+        const request = new Request(input, init);
+        expect(request.headers.get("authorization")).toBe(`Bearer ${secret}`);
+        return streamResponse([
+          {
+            type: "error",
+            payload: { error: `remote failure included ${secret}` },
+          },
+        ]);
+      },
+    });
+
+    try {
+      const runtime = await provider.openSession(openSessionContext(new Map()));
+      await expect(collectEvents(runtime.startTurn(turn("remote failure")))).resolves.toEqual([
+        {
+          type: "turn.failed",
+          code: "MASTRA_CLOUD_ERROR",
+          message: `remote failure included ${secret}`,
+          mayHaveSideEffects: true,
+        },
+      ]);
+      expect(consoleError).not.toHaveBeenCalled();
+      await runtime.close();
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 
   it("bounds provider readiness responses", async () => {

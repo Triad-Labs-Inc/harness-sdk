@@ -8,6 +8,7 @@ import {
   type HarnessEvent,
   type PermissionDecision,
   type ProviderAdapterV1,
+  type ProviderCapabilities,
   type Session,
   UnsupportedCapabilityError,
 } from "@triadlabs/harness-sdk";
@@ -30,6 +31,10 @@ export type ProviderContractScenario =
 export type ProviderContractFactory = (
   scenario: ProviderContractScenario,
 ) => ProviderAdapterV1 | Promise<ProviderAdapterV1>;
+
+export interface ProviderContractOptions {
+  readonly expectedCapabilities?: Readonly<ProviderCapabilities>;
+}
 
 async function fixture(
   factory: ProviderContractFactory,
@@ -86,7 +91,11 @@ function decisionFor(scenario: ProviderContractScenario): PermissionDecision {
   }
 }
 
-export function providerContract(name: string, factory: ProviderContractFactory): void {
+export function providerContract(
+  name: string,
+  factory: ProviderContractFactory,
+  options: ProviderContractOptions = {},
+): void {
   describe(`${name} provider contract`, () => {
     it("reports ready status and explicit capabilities", async () => {
       const { harness, adapter } = await fixture(factory, "stream");
@@ -94,6 +103,9 @@ export function providerContract(name: string, factory: ProviderContractFactory)
         state: "ready",
       });
       const capabilities = await harness.providers[adapter.id]!.capabilities();
+      if (options.expectedCapabilities) {
+        expect(capabilities).toEqual(options.expectedCapabilities);
+      }
       expect(Object.keys(capabilities).sort()).toEqual(
         [
           "steering",

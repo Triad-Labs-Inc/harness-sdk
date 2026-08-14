@@ -124,4 +124,15 @@ function fixture(scenario: ProviderContractScenario): ProviderAdapterV1 {
   };
 }
 
-providerContract("Mastra", fixture);
+providerContract("Mastra", fixture, {
+  expectedCapabilities: {
+    steering: false,
+    interruption: true,
+    permissions: false,
+    questions: false,
+    sessionResume: true,
+    modelOverride: true,
+    reasoningOverride: false,
+    rawEvents: false,
+  },
+});
