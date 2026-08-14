@@ -22,6 +22,10 @@ References:
 - [Claude Agent SDK user input](https://code.claude.com/docs/en/agent-sdk/user-input)
 - [Claude Agent SDK TypeScript repository](https://github.com/anthropics/claude-agent-sdk-typescript)
 
+## Mastra client
+
+The `/mastra` export requires the optional `@mastra/client-js` peer dependency. Mastra and its transitive dependencies retain their own licenses and terms; installing the client is an explicit application choice. Harness does not bundle a hosted agent, create Mastra accounts, or persist configured bearer tokens.
+
 ## Electron example
 
 Electron is a development dependency of the reference application and retains its own MIT license and bundled third-party notices. A product based on the example must include the notices required by its Electron distribution.

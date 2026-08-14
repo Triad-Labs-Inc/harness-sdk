@@ -1,6 +1,6 @@
 ---
 title: "Provider overview"
-description: "Register local coding-agent providers and build interfaces around explicit capabilities."
+description: "Register local and remote agent providers and build interfaces around explicit capabilities."
 icon: "bot"
 ---
 
@@ -12,12 +12,17 @@ Provider adapters translate native agent operations into the same Harness sessio
 import { createHarness } from "@triadlabs/harness-sdk";
 import { createClaudeProvider } from "@triadlabs/harness-sdk/claude";
 import { createCodexProvider } from "@triadlabs/harness-sdk/codex";
+import { createMastraProvider } from "@triadlabs/harness-sdk/mastra";
 
 const harness = await createHarness({
   homeDir: "/path/to/app-data/harness",
   providers: {
     codex: createCodexProvider(),
     claude: createClaudeProvider(),
+    mastra: createMastraProvider({
+      baseUrl: process.env.MASTRA_SERVER_URL!,
+      agentId: process.env.MASTRA_AGENT_ID!,
+    }),
   },
 });
 ```
@@ -57,16 +62,16 @@ if (capabilities.steering) {
 
 Harness also enforces capabilities. Calling an unsupported operation fails with `UnsupportedCapabilityError` before the SDK accepts it.
 
-| Capability         | Codex | Claude |
-| ------------------ | ----- | ------ |
-| Steering           | Yes   | No     |
-| Interruption       | Yes   | Yes    |
-| Permissions        | Yes   | Yes    |
-| Questions          | Yes   | Yes    |
-| Session resume     | Yes   | Yes    |
-| Model override     | Yes   | Yes    |
-| Reasoning override | Yes   | Yes    |
-| Raw native events  | Yes   | Yes    |
+| Capability         | Codex | Claude | Mastra |
+| ------------------ | ----- | ------ | ------ |
+| Steering           | Yes   | No     | No     |
+| Interruption       | Yes   | Yes    | Yes    |
+| Permissions        | Yes   | Yes    | No     |
+| Questions          | Yes   | Yes    | No     |
+| Session resume     | Yes   | Yes    | Yes    |
+| Model override     | Yes   | Yes    | Yes    |
+| Reasoning override | Yes   | Yes    | No     |
+| Raw native events  | Yes   | Yes    | No     |
 
 <Note>
   Harness does not install providers, perform login, or automatically discover adapters. Your

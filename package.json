@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "build": "npm run build:package && npm run build:examples",
-    "build:package": "tsc -b packages/core packages/testkit packages/provider-codex packages/provider-claude && node scripts/assemble-package.mjs",
+    "build:package": "tsc -b packages/core packages/testkit packages/provider-codex packages/provider-claude packages/provider-mastra && node scripts/assemble-package.mjs",
     "build:examples": "tsc -b examples/tui examples/electron && node examples/electron/scripts/copy-assets.mjs",
     "clean": "tsc -b --clean && node scripts/assemble-package.mjs --clean",
     "format": "prettier --write .",
@@ -25,6 +25,8 @@
     "test:integration:codex": "node scripts/run-live-integration.mjs codex",
     "pretest:integration:claude": "npm run build:package",
     "test:integration:claude": "node scripts/run-live-integration.mjs claude",
+    "pretest:integration:mastra": "npm run build:package",
+    "test:integration:mastra": "node scripts/run-live-integration.mjs mastra",
     "typecheck": "npm run build:package && tsc -b examples/tui examples/electron --pretty false",
     "pack:check": "node scripts/pack-smoke.mjs",
     "docs:dev": "cd docs && npx --yes --package=node@22.23.2 --package=mint@4.2.788 -- mint dev",

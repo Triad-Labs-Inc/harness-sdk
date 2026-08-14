@@ -1,0 +1,51 @@
+---
+title: "Mastra"
+description: "Connect Harness sessions to Mastra Cloud or self-hosted Mastra agents."
+icon: "cloud"
+---
+
+The Mastra adapter uses Mastra's native agent streaming API. The connection, credentials, remote execution, and durable memory identity stay in the Node.js or Electron main process.
+
+## Setup
+
+Install the optional Mastra client:
+
+```bash
+npm install @triadlabs/harness-sdk @mastra/client-js
+```
+
+Register an agent with an application-owned provider ID:
+
+```ts
+import { createHarness } from "@triadlabs/harness-sdk";
+import { createMastraProvider } from "@triadlabs/harness-sdk/mastra";
+
+const studioDirector = createMastraProvider({
+  id: "studio-director",
+  baseUrl: process.env.MASTRA_SERVER_URL!,
+  agentId: "studio-director",
+  authToken: process.env.MASTRA_AUTH_TOKEN,
+});
+
+const harness = await createHarness({
+  homeDir: "/path/to/app-data/harness",
+  providers: { "studio-director": studioDirector },
+  rawEvents: "none",
+});
+```
+
+`baseUrl` and `agentId` are required. `id` defaults to `mastra`; use distinct IDs when registering multiple agents. Bearer tokens require HTTPS except for loopback development servers.
+
+## Remote identity and recovery
+
+Each Harness session stores a stable Mastra thread ID and resource ID. A session is also bound to the configured server and agent, preventing configuration changes from silently attaching old history to a different remote agent.
+
+Before sending a turn, the adapter persists the Harness turn ID and forwards it as Mastra's run ID. It clears that marker only after a terminal stream event or confirmed remote abort. If the host crashes while the marker is active, the reopened session fails closed instead of starting overlapping work on a remote thread whose state is unknown.
+
+Interruption calls Mastra's thread-abort endpoint and waits for `{ aborted: true }` before stopping the local stream. An error, timeout, oversized response, or `aborted: false` poisons the thread for further turns.
+
+## Capabilities
+
+Mastra owns remote tool policy. The adapter supports interruption, completed-turn memory resume, and model override. It does not currently support steering, Harness-managed permissions, questions, reasoning overrides, raw native event persistence, tool approvals, or suspended continuations.
+
+The optional A2A agent card is used only for status metadata. Turn execution uses the native Mastra stream API.

@@ -9,6 +9,7 @@ packages/
   core/              Public package root, orchestration, event model, storage contracts
   provider-codex/    Internal workspace assembled as the public /codex subpath
   provider-claude/   Internal workspace assembled as the public /claude subpath
+  provider-mastra/   Internal workspace assembled as the public /mastra subpath
   testkit/           Internal workspace assembled as the public /testkit subpath
 examples/
   tui/               Reference terminal application
@@ -18,7 +19,7 @@ experiments/
   claude-agent-sdk-probe.ts
 ```
 
-The core source package must not import either official provider package. Provider workspaces depend on core contracts. Release builds assemble their compiled entrypoints into the single `@triadlabs/harness-sdk` tarball, while the root export remains provider-independent. This keeps the core usable by future OpenCode, Goose, Pi, and third-party adapters without exposing multiple npm package identities.
+The core source package must not import any official provider package. Provider workspaces depend on core contracts. Release builds assemble their compiled entrypoints into the single `@triadlabs/harness-sdk` tarball, while the root export remains provider-independent. This keeps the core usable by future OpenCode, Goose, Pi, and third-party adapters without exposing multiple npm package identities.
 
 SQLite is the default store and may live in the core package for the first release. Storage remains behind an interface so tests can use memory and future applications can supply another implementation.
 
@@ -26,7 +27,7 @@ SQLite is the default store and may live in the core package for the first relea
 
 Harness SDK owns only the processes it starts. It never searches for an arbitrary terminal process and attaches to it.
 
-Each active Harness session has an isolated provider runtime. For Codex, that means one app-server child process associated with the session. For Claude, it means one SDK query/runtime associated with the session. Isolation prevents a crash, blocked permission, or cancellation in one session from corrupting another session.
+Each active Harness session has an isolated provider runtime. For Codex, that means one app-server child process associated with the session. For Claude, it means one SDK query/runtime associated with the session. For Mastra, it means one remote thread identity and native stream coordinator. Isolation prevents a crash, blocked permission, or cancellation in one session from corrupting another session.
 
 Runtimes start lazily. Loading or listing a session does not start the provider. The runtime starts when an operation requires it, such as sending a turn or resuming an interaction.
 

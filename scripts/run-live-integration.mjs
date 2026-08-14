@@ -11,6 +11,10 @@ const configurations = {
     flag: "HARNESS_RUN_CLAUDE_INTEGRATION",
     file: "packages/provider-claude/src/claude.integration.test.ts",
   },
+  mastra: {
+    flag: "HARNESS_RUN_MASTRA_INTEGRATION",
+    file: "packages/provider-mastra/src/mastra.integration.test.ts",
+  },
 };
 const configuration = configurations[provider];
 if (!configuration) throw new Error(`Unknown integration provider: ${String(provider)}`);

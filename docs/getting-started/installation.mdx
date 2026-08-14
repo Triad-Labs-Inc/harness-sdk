@@ -1,6 +1,6 @@
 ---
 title: "Installation"
-description: "Install Harness SDK and prepare a local Codex or Claude runtime."
+description: "Install Harness SDK and prepare a Codex, Claude, or Mastra runtime."
 icon: "package"
 ---
 
@@ -10,7 +10,7 @@ Harness SDK ships as one npm package with explicit subpath exports for providers
 
 - Node.js 22.13 or newer
 - A stable, application-owned directory for Harness data
-- A locally installed and authenticated provider for real Codex or Claude turns
+- An installed local provider or a reachable Mastra agent for real turns
 
 <Steps>
   <Step title="Install the package">
@@ -23,6 +23,12 @@ npm install @triadlabs/harness-sdk
   <Step title="Prepare a provider">
 
 For Codex, install and authenticate the Codex CLI so `codex app-server` can start. For Claude, authenticate Claude Code with `claude auth login` or provide credentials through the process environment.
+
+For Mastra, also install its optional client and configure the agent endpoint:
+
+```bash
+npm install @mastra/client-js
+```
 
   </Step>
   <Step title="Choose a data directory">
@@ -39,10 +45,11 @@ Pass a stable `homeDir` when you create Harness. The production default stores d
 | `@triadlabs/harness-sdk`                | Core orchestration, storage, events, lifecycle, and adapter types |
 | `@triadlabs/harness-sdk/codex`          | Codex app-server adapter                                          |
 | `@triadlabs/harness-sdk/claude`         | Claude Agent SDK adapter                                          |
+| `@triadlabs/harness-sdk/mastra`         | Mastra-native remote agent adapter                                |
 | `@triadlabs/harness-sdk/testkit`        | Deterministic fake provider without a test-runner dependency      |
 | `@triadlabs/harness-sdk/testkit/vitest` | Optional Vitest provider and storage contract suites              |
 
-The subpaths are not separate npm packages. Install only `@triadlabs/harness-sdk`.
+The subpaths are not separate npm packages. The Mastra subpath has one optional peer dependency, `@mastra/client-js`, which is only needed by applications that import it.
 
 ## Check provider status
 

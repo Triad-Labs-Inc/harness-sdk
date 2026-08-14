@@ -61,6 +61,7 @@ describe("core event and lifecycle contracts", () => {
     capabilityController.capabilities = {
       ...capabilityController.capabilities,
       modelOverride: false,
+      permissions: false,
     };
     const capabilityHarness = await createHarness({
       homeDir: capabilityHome,
@@ -70,6 +71,9 @@ describe("core event and lifecycle contracts", () => {
     const capabilitySession = await capabilityHarness.sessions.create({ provider: "fake" });
     await expect(
       capabilitySession.send({ text: "must not be accepted", model: "unsupported" }),
+    ).rejects.toBeInstanceOf(UnsupportedCapabilityError);
+    await expect(
+      capabilitySession.send({ text: "must not be accepted", permissionMode: "full_access" }),
     ).rejects.toBeInstanceOf(UnsupportedCapabilityError);
     expect((await capabilitySession.history({ limit: 100 })).events).toHaveLength(1);
     await capabilityHarness.close();
@@ -347,6 +351,115 @@ describe("core event and lifecycle contracts", () => {
       mayHaveSideEffects: false,
     });
     expect(controller.starts).toHaveLength(1);
+  });
+
+  it("reports an uncertain active turn when provider interruption fails during shutdown", async () => {
+    const homeDir = await mkdtemp(join(tmpdir(), "harness-interrupt-failure-"));
+    const secret = "shutdown-interrupt-secret";
+    let started!: () => void;
+    let failStream!: (error: Error) => void;
+    const turnStarted = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    const stream = new Promise<IteratorResult<never>>((_resolve, reject) => {
+      failStream = reject;
+    });
+    const base = fakeProvider(new FakeProviderController());
+    const adapter: ProviderAdapterV1 = {
+      ...base,
+      async status(context) {
+        context.registerSecrets([secret]);
+        return await base.status(context);
+      },
+      async openSession() {
+        return {
+          startTurn() {
+            started();
+            return {
+              [Symbol.asyncIterator]() {
+                return {
+                  next: () => stream,
+                };
+              },
+            };
+          },
+          async interrupt() {
+            failStream(new Error("local stream closed during cancellation"));
+            await Promise.resolve();
+            throw new Error(`remote cancellation was not confirmed: ${secret}`);
+          },
+          async close() {},
+        };
+      },
+    };
+    const harness = await createHarness({
+      homeDir,
+      providers: { fake: adapter },
+      store: createMemoryStore(),
+    });
+    const session = await harness.sessions.create({ provider: "fake", cwd: homeDir });
+    const turn = await session.send({ text: "remote side effects" });
+    await turnStarted;
+    await harness.close();
+    const result = await turn.done();
+    expect(result).toMatchObject({
+      status: "failed",
+      error: {
+        code: "PROVIDER_INTERRUPT_FAILED",
+        message: "remote cancellation was not confirmed: <redacted>",
+      },
+      mayHaveSideEffects: true,
+    });
+    expect(JSON.stringify(result)).not.toContain(secret);
+  });
+
+  it("does not start a turn after shutdown while its provider runtime is opening", async () => {
+    const homeDir = await mkdtemp(join(tmpdir(), "harness-runtime-open-close-"));
+    let runtimeOpened!: () => void;
+    let releaseRuntime!: () => void;
+    const opening = new Promise<void>((resolve) => {
+      runtimeOpened = resolve;
+    });
+    const release = new Promise<void>((resolve) => {
+      releaseRuntime = resolve;
+    });
+    let starts = 0;
+    let closes = 0;
+    const base = fakeProvider(new FakeProviderController());
+    const adapter: ProviderAdapterV1 = {
+      ...base,
+      async openSession() {
+        runtimeOpened();
+        await release;
+        return {
+          async *startTurn() {
+            starts += 1;
+            yield { type: "turn.completed" as const };
+          },
+          async interrupt() {},
+          async close() {
+            closes += 1;
+          },
+        };
+      },
+    };
+    const harness = await createHarness({
+      homeDir,
+      providers: { fake: adapter },
+      store: createMemoryStore(),
+    });
+    const session = await harness.sessions.create({ provider: "fake", cwd: homeDir });
+    const turn = await session.send({ text: "must not start after close" });
+    await opening;
+
+    const closing = harness.close();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    releaseRuntime();
+    await closing;
+
+    await expect(turn.done()).resolves.toMatchObject({ status: "interrupted" });
+    expect(starts).toBe(0);
+    expect(closes).toBe(1);
   });
 
   it("expires an unresolved interaction when the provider crashes", async () => {

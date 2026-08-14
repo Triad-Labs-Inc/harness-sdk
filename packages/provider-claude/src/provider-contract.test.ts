@@ -259,7 +259,18 @@ function adapterFor(scenario: ProviderContractScenario) {
   });
 }
 
-providerContract("Claude SDK fixture", adapterFor);
+providerContract("Claude SDK fixture", adapterFor, {
+  expectedCapabilities: {
+    steering: false,
+    interruption: true,
+    permissions: true,
+    questions: true,
+    sessionResume: true,
+    modelOverride: true,
+    reasoningOverride: true,
+    rawEvents: true,
+  },
+});
 
 it("passes explicit default setting sources and the captured resume ID", async () => {
   const seen: Array<{ settingSources?: readonly string[]; resume?: string }> = [];

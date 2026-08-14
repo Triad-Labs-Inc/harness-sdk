@@ -7,6 +7,7 @@ const publicDist = resolve(root, "packages/core/dist");
 const entries = [
   ["packages/provider-codex/dist", "codex"],
   ["packages/provider-claude/dist", "claude"],
+  ["packages/provider-mastra/dist", "mastra"],
   ["packages/testkit/dist", "testkit"],
 ];
 

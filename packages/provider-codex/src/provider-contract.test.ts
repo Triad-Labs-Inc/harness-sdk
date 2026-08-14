@@ -11,12 +11,26 @@ import { createCodexProvider } from "./adapter.js";
 
 const fixture = fileURLToPath(new URL("../test-fixtures/app-server.mjs", import.meta.url));
 
-providerContract("Codex fixture", async () =>
-  createCodexProvider({
-    executable: process.execPath,
-    appServerArgs: [fixture],
-    requestTimeoutMs: 2_000,
-  }),
+providerContract(
+  "Codex fixture",
+  async () =>
+    createCodexProvider({
+      executable: process.execPath,
+      appServerArgs: [fixture],
+      requestTimeoutMs: 2_000,
+    }),
+  {
+    expectedCapabilities: {
+      steering: true,
+      interruption: true,
+      permissions: true,
+      questions: true,
+      sessionResume: true,
+      modelOverride: true,
+      reasoningOverride: true,
+      rawEvents: true,
+    },
+  },
 );
 
 it("reports a missing Codex executable without throwing", async () => {

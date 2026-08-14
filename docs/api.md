@@ -1,6 +1,6 @@
 # API reference
 
-Harness SDK publishes one package with four public entrypoints. Applications register adapters explicitly; the root entrypoint never imports an official provider package.
+Harness SDK publishes one package with provider and testing subpath entrypoints. Applications register adapters explicitly; the root entrypoint never imports an official provider package.
 
 ## `@triadlabs/harness-sdk`
 
@@ -84,10 +84,23 @@ The adapter persists only the native thread ID as opaque provider metadata.
 
 Provider status starts a non-persistent Agent SDK initialization, sends no user prompt, and accepts authentication delegated by Claude Code. This includes an existing local Claude.ai subscription login, API credentials, and supported external backends reported by the runtime. The adapter stores only the native SDK session ID for resume; credentials and environment values are not persisted. Claude does not advertise steering in version 1.
 
+## `@triadlabs/harness-sdk/mastra`
+
+`createMastraProvider(options)` connects to a Mastra Cloud or self-hosted Mastra agent through `@mastra/client-js`, which is an optional peer dependency.
+
+- `id`: Harness registry ID; defaults to `mastra`.
+- `baseUrl`: required Mastra server base URL.
+- `agentId`: required remote agent ID.
+- `authToken`: optional runtime bearer token; non-loopback HTTP is rejected.
+- `resourceId`: optional stable remote user/resource identity.
+- timeout and byte-limit options bound status, interruption, streams, chunks, and control responses.
+
+The adapter persists remote identity and safety metadata, confirms interruption remotely, and fails closed after an uncertain active turn. Mastra owns remote tool policy, so Harness permissions and questions are not advertised.
+
 ## `@triadlabs/harness-sdk/testkit`
 
 Exports `FakeProviderController` and `fakeProvider()`. The fake supports deterministic text, tools, permissions, questions, delays, diagnostics, failures, crashes, and interruption without importing a test runner.
 
 ## `@triadlabs/harness-sdk/testkit/vitest`
 
-Exports `storageContract()` and `providerContract()` for Vitest users who implement custom stores or provider adapters. Vitest is an optional peer dependency and is not installed for production consumers that use only the root, Codex, Claude, or lightweight testkit entrypoints.
+Exports `storageContract()` and `providerContract()` for Vitest users who implement custom stores or provider adapters. Pass `expectedCapabilities` to `providerContract()` to pin the adapter's intended capability matrix while capability-specific scenarios remain gated. Vitest is an optional peer dependency and is not installed for production consumers that use only the root or provider entrypoints.
